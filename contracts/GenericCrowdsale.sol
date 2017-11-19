@@ -1,5 +1,5 @@
 
-pragma solidity ^0.4.15;
+pragma solidity ^0.4.18;
 
 contract GenericCrowdsale {
     address public icoBackend;
@@ -62,6 +62,13 @@ contract GenericCrowdsale {
     function unpause() onlyManager external {
         paused = false;
         Unpaused();
+    }
+
+    /**
+     * @dev Allows the manager to change backends.
+     */
+    function changeicoBackend(address _icoBackend) onlyManager external {
+        icoBackend = _icoBackend;
     }
 
     /**

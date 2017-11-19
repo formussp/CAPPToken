@@ -1,15 +1,15 @@
 
-pragma solidity ^0.4.11;
+pragma solidity ^0.4.18;
 
 import "./StandardToken.sol";
 
-contract ARToken is StandardToken {
+contract Cappasity is StandardToken {
 
   // Constants
   // =========
-  string public constant name = "ARToken";
-  string public constant symbol = "AR";
-  uint public constant decimals = 2;
+  string public constant name = "Cappasity";
+  string public constant symbol = "CAPP";
+  uint8 public constant decimals = 2;
   uint public constant TOKEN_LIMIT = 10 * 1e9 * 1e2; // 10 billion tokens, 2 decimals
 
   // State variables
@@ -22,23 +22,23 @@ contract ARToken is StandardToken {
 
   // Constructor
   // ===========
-  function ARToken(address _manager) {
+  function Cappasity(address _manager) {
     manager = _manager;
   }
 
   // ERC20 functions
   // =========================
-  function transfer(address _to, uint _value) returns (bool success) {
+  function transfer(address _to, uint _value) public returns (bool) {
     require(!tokensAreFrozen);
     super.transfer(_to, _value);
   }
 
-  function transferFrom(address _from, address _to, uint _value) returns (bool success) {
+  function transferFrom(address _from, address _to, uint _value) public returns (bool) {
     require(!tokensAreFrozen);
     super.transferFrom(_from, _to, _value);
   }
 
-  function approve(address _spender, uint _value) returns (bool success) {
+  function approve(address _spender, uint _value) public returns (bool) {
     require(!tokensAreFrozen);
     super.approve(_spender, _value);
   }
@@ -58,11 +58,11 @@ contract ARToken is StandardToken {
     require(totalSupply + _value > totalSupply); 
     require(mintingIsAllowed);
 
-    balances[_beneficiary] += _value;
-    totalSupply += _value;
+    balances[_beneficiary] = safeAdd(balances[_beneficiary], _value);
+    totalSupply = safeAdd( totalSupply,_value );
   }
 
-  // Disable minting. Can be enabled later, but only once (see TokenAllocation.sol)
+  // Disable minting. Can be enabled later, but TokenAllocation.sol only does that once.
   function endMinting() onlyByManager external {
     mintingIsAllowed = false;
   }
