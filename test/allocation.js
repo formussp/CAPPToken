@@ -37,7 +37,7 @@ contract("allocation", function(accounts) {
         let acc = accounts[5];
         let expectedAllocations =
             [[acc, firstSum, firstSum * 125 ]]
-        let expectedBonuses = 
+        let expectedBonuses =
             [[acc, firstSum * 125 * 10 / 100 ], // tier bonus
              [acc, firstSum * 125 * 10 / 100 ]] // size bonus
 
@@ -45,30 +45,30 @@ contract("allocation", function(accounts) {
         let bonusIssuedListener     = allocation.BonusIssued();
 
         await allocation.issueTokens(acc, firstSum, {from: icoBackend});
-        
+
         let tokenAllocationLog = await new Promise(
                 (resolve, reject) => tokenAllocationListener.get(
                     (error, log) => error ? reject(error) : resolve(log)
                     ));
 
-        assert.equal(tokenAllocationLog.length, 
-                     expectedAllocations.length, 
+        assert.equal(tokenAllocationLog.length,
+                     expectedAllocations.length,
                      "wrong number of allocations");
 
         let totalTokens = 0;
-        
+
         for (let i=0; i<expectedAllocations.length; i++) {
             let allocationArgs = tokenAllocationLog[i].args;
 
-            assert.equal(allocationArgs._beneficiary, 
+            assert.equal(allocationArgs._beneficiary,
                         expectedAllocations[i][0],
                         "incorrect address: " + allocationArgs._beneficiary);
 
-            assert.equal(allocationArgs._contribution, 
+            assert.equal(allocationArgs._contribution,
                         expectedAllocations[i][1],
                         "sum mismatch: " + allocationArgs._contribution);
 
-            assert.equal(allocationArgs._tokensIssued, 
+            assert.equal(allocationArgs._tokensIssued,
                         expectedAllocations[i][2],
                         "allocation mismatch: " + allocationArgs._tokensIssued);
 
@@ -86,8 +86,8 @@ contract("allocation", function(accounts) {
          */
 
         /*
-        assert.equal(bonusIssuedLog.length, 
-                     expectedBonuses.length, 
+        assert.equal(bonusIssuedLog.length,
+                     expectedBonuses.length,
                      'wrong number of bonuses');
                      */
 
@@ -99,9 +99,9 @@ contract("allocation", function(accounts) {
                         expectedBonuses[i][0],
                         "incorrect address: " + bonusIssuedArgs._beneficiary);
 
-            assert.equal(bonusIssuedArgs._bonusTokensIssued, 
-                        expectedBonuses[i][1], 
-                        "bonus mismatch: " + bonusIssuedArgs._bonusTokensIssued); 
+            assert.equal(bonusIssuedArgs._bonusTokensIssued,
+                        expectedBonuses[i][1],
+                        "bonus mismatch: " + bonusIssuedArgs._bonusTokensIssued);
                         */
 
         totalTokens += expectedBonuses[i][1];
@@ -131,7 +131,7 @@ contract("allocation", function(accounts) {
              [acc,
               secondSum + firstSum - bonusTierSize,
               (secondSum + firstSum - bonusTierSize) * 125 ]]
-        let expectedBonuses = 
+        let expectedBonuses =
             [[acc,
               (bonusTierSize - firstSum) * 125 * 10 / 100 ], // Tier 1 bonus
              [acc,
@@ -143,30 +143,30 @@ contract("allocation", function(accounts) {
         let bonusIssuedListener = allocation.BonusIssued();
 
         await allocation.issueTokens(acc, secondSum, {from: icoBackend});
-        
+
         let tokenAllocationLog = await new Promise(
                 (resolve, reject) => tokenAllocationListener.get(
                     (error, log) => error ? reject(error) : resolve(log)
                     ));
 
-        assert.equal(tokenAllocationLog.length, 
-                     expectedAllocations.length, 
+        assert.equal(tokenAllocationLog.length,
+                     expectedAllocations.length,
                      "wrong number of allocations");
 
         let totalTokens = 0;
-        
+
         for (let i=0; i<expectedAllocations.length; i++) {
             let allocationArgs = tokenAllocationLog[i].args;
 
-            assert.equal(allocationArgs._beneficiary, 
+            assert.equal(allocationArgs._beneficiary,
                         expectedAllocations[i][0],
                         "incorrect address: " + allocationArgs._beneficiary);
 
-            assert.equal(allocationArgs._contribution, 
+            assert.equal(allocationArgs._contribution,
                         expectedAllocations[i][1],
                         "sum mismatch: " + allocationArgs._contribution);
 
-            assert.equal(allocationArgs._tokensIssued, 
+            assert.equal(allocationArgs._tokensIssued,
                         expectedAllocations[i][2],
                         "allocation mismatch: " + allocationArgs._tokensIssued);
 
@@ -208,11 +208,11 @@ contract("allocation", function(accounts) {
         let expectedAllocations =
             [[acc,
               3 * 1e8,
-              3 * 1e8 * 125 ], 
+              3 * 1e8 * 125 ],
              [acc,
               2 * 1e8,
               2 * 1e8 * 125 ]]
-        let expectedBonuses = 
+        let expectedBonuses =
             [[acc,
               3 * 1e8 * 125 * 5 / 100 ], // Tier 2 bonus
              [acc,
@@ -224,30 +224,30 @@ contract("allocation", function(accounts) {
         let bonusIssuedListener = allocation.BonusIssued();
 
         await allocation.issueTokens(acc, thirdSum, {from: icoBackend});
-        
+
         let tokenAllocationLog = await new Promise(
                 (resolve, reject) => tokenAllocationListener.get(
                     (error, log) => error ? reject(error) : resolve(log)
                     ));
 
-        assert.equal(tokenAllocationLog.length, 
-                     expectedAllocations.length, 
+        assert.equal(tokenAllocationLog.length,
+                     expectedAllocations.length,
                      "wrong number of allocations");
 
         let totalTokens = 0;
-        
+
         for (let i=0; i<expectedAllocations.length; i++) {
             let allocationArgs = tokenAllocationLog[i].args;
 
-            assert.equal(allocationArgs._beneficiary, 
+            assert.equal(allocationArgs._beneficiary,
                         expectedAllocations[i][0],
                         "incorrect address: " + allocationArgs._beneficiary);
 
-            assert.equal(Number(allocationArgs._contribution), 
+            assert.equal(Number(allocationArgs._contribution),
                         expectedAllocations[i][1],
                         "sum mismatch");
 
-            assert.equal(allocationArgs._tokensIssued, 
+            assert.equal(allocationArgs._tokensIssued,
                         expectedAllocations[i][2],
                         "allocation mismatch: " + allocationArgs._tokensIssued);
 
@@ -264,8 +264,8 @@ contract("allocation", function(accounts) {
         }
 
         /*
-        assert.equal(bonusIssuedLog.length, 
-                     expectedBonuses.length, 
+        assert.equal(bonusIssuedLog.length,
+                     expectedBonuses.length,
                      'wrong number of bonuses');
 
         for (let i=0; i<expectedBonuses.length; i++) {
@@ -275,9 +275,9 @@ contract("allocation", function(accounts) {
                         expectedBonuses[i][0],
                         "incorrect address");
 
-            assert.equal(Number(bonusIssuedArgs._bonusTokensIssued), 
-                        expectedBonuses[i][1], 
-                        "bonus mismatch"); 
+            assert.equal(Number(bonusIssuedArgs._bonusTokensIssued),
+                        expectedBonuses[i][1],
+                        "bonus mismatch");
 
             totalTokens += expectedBonuses[i][1];
         }
@@ -318,30 +318,30 @@ contract("allocation", function(accounts) {
         let bonusIssuedListener = allocation.BonusIssued();
 
         await allocation.issueTokens(address, sum, {from: icoBackend});
-        
+
         let tokenAllocationLog = await new Promise(
                 (resolve, reject) => tokenAllocationListener.get(
                     (error, log) => error ? reject(error) : resolve(log)
                     ));
 
-        assert.equal(tokenAllocationLog.length, 
-                     expectedAllocations.length, 
+        assert.equal(tokenAllocationLog.length,
+                     expectedAllocations.length,
                      "wrong number of allocations");
 
         let totalTokens = 0;
-        
+
         for (let i=0; i<expectedAllocations.length; i++) {
             let allocationArgs = tokenAllocationLog[i].args;
 
-            assert.equal(String(allocationArgs._beneficiary), 
+            assert.equal(String(allocationArgs._beneficiary),
                         expectedAllocations[i][0],
                         "incorrect address");
 
-            assert.equal(Number(allocationArgs._contribution), 
+            assert.equal(Number(allocationArgs._contribution),
                         expectedAllocations[i][1],
                         "sum mismatch");
 
-            assert.equal(Number(allocationArgs._tokensIssued), 
+            assert.equal(Number(allocationArgs._tokensIssued),
                         expectedAllocations[i][2],
                         "allocation mismatch");
 
@@ -380,30 +380,30 @@ contract("allocation", function(accounts) {
         let bonusIssuedListener = allocation.BonusIssued();
 
         await allocation.issueTokens(address, sum, {from: icoBackend});
-        
+
         let tokenAllocationLog = await new Promise(
                 (resolve, reject) => tokenAllocationListener.get(
                     (error, log) => error ? reject(error) : resolve(log)
                     ));
 
-        assert.equal(tokenAllocationLog.length, 
-                     expectedAllocations.length, 
+        assert.equal(tokenAllocationLog.length,
+                     expectedAllocations.length,
                      "wrong number of allocations");
 
         let totalTokens = 0;
-        
+
         for (let i=0; i<expectedAllocations.length; i++) {
             let allocationArgs = tokenAllocationLog[i].args;
 
-            assert.equal(String(allocationArgs._beneficiary), 
+            assert.equal(String(allocationArgs._beneficiary),
                         expectedAllocations[i][0],
                         "incorrect address");
 
-            assert.equal(Number(allocationArgs._contribution), 
+            assert.equal(Number(allocationArgs._contribution),
                         expectedAllocations[i][1],
                         "sum mismatch");
 
-            assert.equal(Number(allocationArgs._tokensIssued), 
+            assert.equal(Number(allocationArgs._tokensIssued),
                         expectedAllocations[i][2],
                         "allocation mismatch");
 
@@ -444,11 +444,11 @@ contract("allocation", function(accounts) {
         let allocationArgs = rewardsIssuedLog[0].args;
 
         // Checking within bounds to account for rounding
-        assert.isAtLeast(Number(allocationArgs._tokensForFounders), 
+        assert.isAtLeast(Number(allocationArgs._tokensForFounders),
                     totalSupply * 1795 / 10000,
                     "wrong number of tokens for founders");
 
-        assert.isAtMost(Number(allocationArgs._tokensForFounders), 
+        assert.isAtMost(Number(allocationArgs._tokensForFounders),
                     totalSupply * 1805 / 10000,
                     "wrong number of tokens for founders");
 
@@ -459,11 +459,11 @@ contract("allocation", function(accounts) {
                      allocationArgs._tokensForFounders,
                      "vesting wallet created and received founders' tokens");
 
-        assert.isAtLeast(Number(allocationArgs._tokensForPartners), 
+        assert.isAtLeast(Number(allocationArgs._tokensForPartners),
                     totalSupply * 1195 / 10000,
                     "wrong number of tokens for partners");
 
-        assert.isAtMost(Number(allocationArgs._tokensForPartners), 
+        assert.isAtMost(Number(allocationArgs._tokensForPartners),
                     totalSupply * 1205 / 10000,
                     "wrong number of tokens for partners");
 
@@ -495,30 +495,30 @@ contract("allocation", function(accounts) {
         let bonusIssuedListener = allocation.BonusIssued();
 
         await allocation.issueTokens(address, sum, {from: icoBackend});
-        
+
         let tokenAllocationLog = await new Promise(
                 (resolve, reject) => tokenAllocationListener.get(
                     (error, log) => error ? reject(error) : resolve(log)
                     ));
 
-        assert.equal(tokenAllocationLog.length, 
-                     expectedAllocations.length, 
+        assert.equal(tokenAllocationLog.length,
+                     expectedAllocations.length,
                      "wrong number of allocations");
 
         let totalTokens = 0;
-        
+
         for (let i=0; i<expectedAllocations.length; i++) {
             let allocationArgs = tokenAllocationLog[i].args;
 
-            assert.equal(String(allocationArgs._beneficiary), 
+            assert.equal(String(allocationArgs._beneficiary),
                         expectedAllocations[i][0],
                         "incorrect address");
 
-            assert.equal(Number(allocationArgs._contribution), 
+            assert.equal(Number(allocationArgs._contribution),
                         expectedAllocations[i][1],
                         "sum mismatch");
 
-            assert.equal(Number(allocationArgs._tokensIssued), 
+            assert.equal(Number(allocationArgs._tokensIssued),
                         expectedAllocations[i][2],
                         "allocation mismatch");
 
@@ -547,7 +547,7 @@ contract("allocation", function(accounts) {
         let address = 0x45cd;
         let sum = 11 * 1e6 * 1e2;
 
-        let expectedAllocations = 
+        let expectedAllocations =
             [ [address, 9550 * 1e3 * 1e2, 9550 * 1e3 * 1e2 * newRate],
               [address, 1450 * 1e3 * 1e2, 1450 * 1e3 * 1e2 * newRate] ];
 
@@ -560,30 +560,30 @@ contract("allocation", function(accounts) {
         let bonusIssuedListener = allocation.BonusIssued();
 
         await allocation.issueTokens(address, sum, {from: icoBackend});
-        
+
         let tokenAllocationLog = await new Promise(
                 (resolve, reject) => tokenAllocationListener.get(
                     (error, log) => error ? reject(error) : resolve(log)
                     ));
 
-        assert.equal(tokenAllocationLog.length, 
-                     expectedAllocations.length, 
+        assert.equal(tokenAllocationLog.length,
+                     expectedAllocations.length,
                      "wrong number of allocations");
 
         let totalTokens = 0;
-        
+
         for (let i=0; i<expectedAllocations.length; i++) {
             let allocationArgs = tokenAllocationLog[i].args;
 
-            assert.equal(String(allocationArgs._beneficiary), 
+            assert.equal(String(allocationArgs._beneficiary),
                         expectedAllocations[i][0],
                         "incorrect address");
 
-            assert.equal(Number(allocationArgs._contribution), 
+            assert.equal(Number(allocationArgs._contribution),
                         expectedAllocations[i][1],
                         "sum mismatch");
 
-            assert.equal(Number(allocationArgs._tokensIssued), 
+            assert.equal(Number(allocationArgs._tokensIssued),
                         expectedAllocations[i][2],
                         "allocation mismatch");
 
@@ -625,20 +625,20 @@ contract("allocation", function(accounts) {
         let vestingBalance = await token.balanceOf(vestingWallet);
 
         // Checking within bounds to account for rounding
-        assert.isAtLeast(Number(vestingBalance), 
+        assert.isAtLeast(Number(vestingBalance),
                     totalSupply * 1795 / 10000,
                     "wrong number of tokens for founders in vesting");
-        assert.isAtMost(Number(vestingBalance), 
+        assert.isAtMost(Number(vestingBalance),
                     totalSupply * 1805 / 10000,
                     "wrong number of tokens for founders in vesting");
 
 
         let partnersBalance = await token.balanceOf(allocationArgs._partnersWallet);
 
-        assert.isAtLeast(Number(partnersBalance), 
+        assert.isAtLeast(Number(partnersBalance),
                     totalSupply * 1195 / 10000,
                     "wrong number of tokens for partners");
-        assert.isAtMost(Number(partnersBalance), 
+        assert.isAtMost(Number(partnersBalance),
                     totalSupply * 1205 / 10000,
                     "wrong number of tokens for partners");
     });

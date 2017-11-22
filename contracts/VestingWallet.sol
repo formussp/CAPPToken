@@ -26,7 +26,7 @@ contract VestingWallet is SafeMath {
 
     // Constructor
     // ===========
-    function VestingWallet(address _foundersWallet, address _tokenContract) {
+    function VestingWallet(address _foundersWallet, address _tokenContract) public {
         require(0x0!=_foundersWallet);
         require(0x0!=_tokenContract);
 
@@ -54,14 +54,15 @@ contract VestingWallet is SafeMath {
             tokensToRelease = tokenContract.balanceOf(this);
             nextPeriod = 0x0;
         }
+
         tokensRemaining = safeSub(tokensRemaining, tokensToRelease);
         tokenContract.transfer(foundersWallet, tokensToRelease);
 
         TokensReleased(tokensToRelease, tokensRemaining, nextPeriod);
     }
 
-    function launchVesting() onlyCrowdsale {
-        require( false == vestingStarted );
+    function launchVesting() public onlyCrowdsale {
+        require(false == vestingStarted);
 
         vestingStarted  = true;
         tokensRemaining = tokenContract.balanceOf(this);
@@ -72,12 +73,12 @@ contract VestingWallet is SafeMath {
     // INTERNAL FUNCTIONS
     // ==================
     modifier onlyFounders() {
-        require( msg.sender == foundersWallet );
+        require(msg.sender == foundersWallet);
         _;
     }
 
     modifier onlyCrowdsale() {
-        require( msg.sender == crowdsaleContract );
+        require(msg.sender == crowdsaleContract);
         _;
     }
 }
