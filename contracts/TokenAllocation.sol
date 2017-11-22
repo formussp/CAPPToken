@@ -84,11 +84,10 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
      * @param _contribution Size of the contribution (in USD cents).
      */
     function issueTokens(address _beneficiary, uint _contribution) external onlyOffChain onlyValidPhase onlyUnpaused {
-        require(totalCentsGathered + _contribution <= hardCap);
-        require(totalCentsGathered + _contribution >= totalCentsGathered);
+        require(safeAdd(totalCentsGathered, _contribution) <= hardCap);
 
         if (crowdsalePhase == CrowdsalePhase.PhaseOne) {
-            require(totalCentsGathered + _contribution <= phaseOneCap);
+            require(safeAdd(totalCentsGathered, _contribution) <= phaseOneCap);
         }
 
         uint remainingContribution = _contribution;
@@ -146,9 +145,7 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
                                             onlyOffChain onlyValidPhase onlyUnpaused external {
 
         // ensure we are not over hard cap after this contribution
-        require(totalCentsGathered + _contribution <= hardCap);
-        require(totalCentsGathered + _contribution >= totalCentsGathered);
-
+        require(safeAdd(totalCentsGathered, _contribution) <= hardCap);
         // sanity check, ensure we allocate more than 0
         require(_tokens > 0);
         // all tokens can be bonuses, but they cant be less than bonuses
@@ -156,7 +153,7 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
 
         // ensure we are not over phase 1 cap after this contribution
         if (crowdsalePhase == CrowdsalePhase.PhaseOne) {
-            require(totalCentsGathered + _contribution <= phaseOneCap);
+            require(safeAdd(totalCentsGathered, _contribution) <= phaseOneCap);
         }
 
         uint remainingContribution = _contribution;
@@ -186,7 +183,10 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
         TokensAllocated(_beneficiary, _contribution, _tokens);
 
         // dispatch bonus issued event
-        BonusIssued(_beneficiary, _bonus);
+        uint normalizedBonus = safeSub(_tokens, _bonus);
+        if (normalizedBonus > 0) {
+          BonusIssued(_beneficiary, normalizedBonus);
+        }
     }
 
     /**
