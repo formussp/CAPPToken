@@ -26,13 +26,13 @@ contract GenericCrowdsale {
      * @param partnersWallet Wallet address holding the tokens for early contributors.
      * @param tokensForPartners The amount of tokens issued for rewarding early contributors.
      */
-    event FoundersAndPartnersTokensIssued(address foundersWallet, uint tokensForFounders, 
+    event FoundersAndPartnersTokensIssued(address foundersWallet, uint tokensForFounders,
                                           address partnersWallet, uint tokensForPartners);
     event Paused();
     event Unpaused();
 
     /**
-     * @dev Issues tokens for the off-chain contributors by accepting calls from the trusted address. 
+     * @dev Issues tokens for the off-chain contributors by accepting calls from the trusted address.
      *        Supposed to be run by the backend.
      * @param _beneficiary Token holder.
      * @param _contribution The equivalent (in USD cents) of the contribution received off-chain.
@@ -40,13 +40,14 @@ contract GenericCrowdsale {
     function issueTokens(address _beneficiary, uint _contribution) onlyBackend onlyUnpaused external;
 
     /**
-     * @dev Issues tokens for the off-chain contributors by accepting calls from the trusted address. 
+     * @dev Issues tokens for the off-chain contributors by accepting calls from the trusted address.
      *        Supposed to be run by the backend.
      * @param _beneficiary Token holder.
      * @param _contribution The equivalent (in USD cents) of the contribution received off-chain.
-     * @param _bonus Custom bonus size in percents, will be issued as one batch after the contribution. 
+     * @param _tokens Total Tokens to issue for the contribution, must be > 0
+     * @param _bonus How many tokens are bonuses, less or equal to _tokens
      */
-    function issueTokensWithCustomBonus(address _beneficiary, uint _contribution, uint _bonus) onlyBackend onlyUnpaused external;
+    function issueTokensWithCustomBonus(address _beneficiary, uint _contribution, uint _tokens, uint _bonus) onlyBackend onlyUnpaused external;
 
     /**
      * @dev Pauses the token allocation process.
@@ -72,7 +73,7 @@ contract GenericCrowdsale {
     }
 
     /**
-     * @dev Issues the rewards for founders and early contributors. 18% and 12% of the total token supply by the end 
+     * @dev Issues the rewards for founders and early contributors. 18% and 12% of the total token supply by the end
      *        of the crowdsale, respectively, including all the token bonuses on early contributions. Can only be
      *        called after the end of the crowdsale phase, ends the current phase.
      */

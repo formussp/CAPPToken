@@ -22,7 +22,7 @@ contract Cappasity is StandardToken {
 
   // Constructor
   // ===========
-  function Cappasity(address _manager) {
+  function Cappasity(address _manager) public {
     manager = _manager;
   }
 
@@ -55,18 +55,18 @@ contract Cappasity is StandardToken {
     require(_value != 0);
     require(totalSupply + _value <= TOKEN_LIMIT);
     // Making double sure uint doesn't overflow and wrap back
-    require(totalSupply + _value > totalSupply); 
+    require(totalSupply + _value > totalSupply);
     require(mintingIsAllowed);
 
     balances[_beneficiary] = safeAdd(balances[_beneficiary], _value);
-    totalSupply = safeAdd( totalSupply,_value );
+    totalSupply = safeAdd(totalSupply,_value);
   }
 
   // Disable minting. Can be enabled later, but TokenAllocation.sol only does that once.
   function endMinting() onlyByManager external {
     mintingIsAllowed = false;
   }
-  
+
   // Enable minting. See TokenAllocation.sol
   function startMinting() onlyByManager external {
     mintingIsAllowed = true;

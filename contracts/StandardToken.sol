@@ -36,6 +36,8 @@ contract StandardToken is ERC20, SafeMath {
     }
 
     function approve(address _spender, uint _value) public returns (bool) {
+        // needs to be called twice -> first set to 0, then increase to another amount
+        // this is to avoid race conditions
         require((_value == 0) || (allowed[msg.sender][_spender] == 0));
 
         allowed[msg.sender][_spender] = _value;

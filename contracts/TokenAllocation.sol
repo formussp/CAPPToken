@@ -7,14 +7,14 @@ import './VestingWallet.sol';
 
    /**
     * @dev Prepaid token allocation for a capped crowdsale with bonus structure sliding on sales
-    *      Written with OpenZeppelin sources as a rough reference.     
+    *      Written with OpenZeppelin sources as a rough reference.
     */
 
 contract TokenAllocation is GenericCrowdsale, SafeMath {
     // Events
     event TokensAllocated(address _beneficiary, uint _contribution, uint _tokensIssued);
     event BonusIssued(address _beneficiary, uint _bonusTokensIssued);
-    event FoundersAndPartnersTokensIssued(address _foundersWallet, uint _tokensForFounders, 
+    event FoundersAndPartnersTokensIssued(address _foundersWallet, uint _tokensForFounders,
                                           address _partnersWallet, uint _tokensForPartners);
 
     // Token information
@@ -24,7 +24,7 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
 
     address public foundersWallet; // A wallet permitted to request tokens from the time vaults.
     address public partnersWallet; // A wallet that distributes the tokens to early contributors.
-    
+
     // Crowdsale progress
     uint constant public hardCap     = 5 * 1e7 * 1e2; // 50 000 000 dollars * 100 cents per dollar
     uint constant public phaseOneCap = 3 * 1e7 * 1e2; // 30 000 000 dollars * 100 cents per dollar
@@ -44,8 +44,8 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
     enum BonusPhase { TenPercent, FivePercent, None }
 
     uint public constant bonusTierSize = 1 * 1e7 * 1e2; // 10 000 000 dollars * 100 cents per dollar
-    uint public constant bigContributionBound  = 1 * 1e5 * 1e2; // 100 000 dollars * 100 cents per dollar 
-    uint public constant hugeContributionBound = 3 * 1e5 * 1e2; // 300 000 dollars * 100 cents per dollar 
+    uint public constant bigContributionBound  = 1 * 1e5 * 1e2; // 100 000 dollars * 100 cents per dollar
+    uint public constant hugeContributionBound = 3 * 1e5 * 1e2; // 300 000 dollars * 100 cents per dollar
     CrowdsalePhase public crowdsalePhase = CrowdsalePhase.PhaseOne;
     BonusPhase public bonusPhase = BonusPhase.TenPercent;
 
@@ -57,16 +57,16 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
      * @param _foundersWallet Where the founders' tokens to to after vesting.
      * @param _partnersWallet A wallet that distributes tokens to early contributors.
      */
-    function TokenAllocation(address _icoManager, 
+    function TokenAllocation(address _icoManager,
                              address _icoBackend,
                              address _foundersWallet,
-                             address _partnersWallet 
-                             ) { 
+                             address _partnersWallet
+                             ) public {
         require(_icoManager != 0x0);
         require(_icoBackend != 0x0);
         require(_foundersWallet != 0x0);
         require(_partnersWallet != 0x0);
-        
+
         tokenContract = new Cappasity(address(this));
 
         icoManager       = _icoManager;
@@ -79,14 +79,15 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
     // ====================
     /**
      * @dev Issues tokens for a particular address as for a contribution of size _contribution, \
-     *          \ then issues bonuses in proportion. 
+     *          \ then issues bonuses in proportion.
      * @param _beneficiary Receiver of the tokens.
      * @param _contribution Size of the contribution (in USD cents).
-     */ 
+     */
     function issueTokens(address _beneficiary, uint _contribution) external onlyOffChain onlyValidPhase onlyUnpaused {
-        require( totalCentsGathered + _contribution <= hardCap );
+        require(safeAdd(totalCentsGathered, _contribution) <= hardCap);
+
         if (crowdsalePhase == CrowdsalePhase.PhaseOne) {
-            require( totalCentsGathered + _contribution <= phaseOneCap );
+            require(safeAdd(totalCentsGathered, _contribution) <= phaseOneCap);
         }
 
         uint remainingContribution = _contribution;
@@ -95,20 +96,20 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
         // mint tokens for each part separately, assign bonuses, trigger events. For transparency.
         do {
             // 1 - calculate contribution part for current bonus stage
-            uint centsLeftInPhase = calculateCentsLeftInPhase( remainingContribution );
-            uint contributionPart = min( remainingContribution, centsLeftInPhase );
-            
+            uint centsLeftInPhase = calculateCentsLeftInPhase(remainingContribution);
+            uint contributionPart = min(remainingContribution, centsLeftInPhase);
+
             // 3 - mint tokens
-            uint tokensToMint = safeMul( tokenRate, contributionPart );
-            mintAndUpdate( _beneficiary, tokensToMint );
-            TokensAllocated( _beneficiary, contributionPart, tokensToMint );
+            uint tokensToMint = safeMul(tokenRate, contributionPart);
+            mintAndUpdate(_beneficiary, tokensToMint);
+            TokensAllocated(_beneficiary, contributionPart, tokensToMint);
 
             // 4 - mint bonus
-            uint tierBonus = calculateTierBonus( contributionPart );
+            uint tierBonus = calculateTierBonus(contributionPart);
             if (tierBonus > 0) {
-                mintAndUpdate( _beneficiary, tierBonus );
+                mintAndUpdate(_beneficiary, tierBonus);
+                BonusIssued(_beneficiary, tierBonus);
             }
-            BonusIssued( _beneficiary, tierBonus );
 
             // 5 - advance bonus phase
             if ((bonusPhase != BonusPhase.None) && (contributionPart == centsLeftInPhase)) {
@@ -116,32 +117,43 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
             }
 
             // 6 - log the processed part of the contribution
-            totalCentsGathered = safeAdd( totalCentsGathered, contributionPart );
-            remainingContribution = safeSub( remainingContribution, contributionPart );
+            totalCentsGathered = safeAdd(totalCentsGathered, contributionPart);
+            remainingContribution = safeSub(remainingContribution, contributionPart);
 
             // 7 - continue?
         } while (remainingContribution > 0);
 
         // Mint contribution size bonus
         uint sizeBonus = calculateSizeBonus(_contribution);
-        if ( sizeBonus>0 ) { 
+        if (sizeBonus > 0) {
             mintAndUpdate(_beneficiary, sizeBonus);
+            BonusIssued(_beneficiary, sizeBonus);
         }
-        BonusIssued(_beneficiary, sizeBonus);
     }
 
     /**
-     * @dev Issues tokens for the off-chain contributors by accepting calls from the trusted address. 
-     *        Supposed to be run by the backend.
+     * @dev Issues tokens for the off-chain contributors by accepting calls from the trusted address.
+     *        Supposed to be run by the backend. Used for distributing bonuses for affiliate transactions
+     *        and special offers
+     *
      * @param _beneficiary Token holder.
      * @param _contribution The equivalent (in USD cents) of the contribution received off-chain.
-     * @param _bonus Custom bonus size in percents, will be issued as one batch after the contribution. 
+     * @param _tokens Total token allocation size
+     * @param _bonus Bonus size
      */
-    function issueTokensWithCustomBonus(address _beneficiary, uint _contribution, uint _bonus) 
-                                            onlyOffChain  onlyValidPhase onlyUnpaused external {
-        require( totalCentsGathered + _contribution <= hardCap );
+    function issueTokensWithCustomBonus(address _beneficiary, uint _contribution, uint _tokens, uint _bonus)
+                                            onlyOffChain onlyValidPhase onlyUnpaused external {
+
+        // ensure we are not over hard cap after this contribution
+        require(safeAdd(totalCentsGathered, _contribution) <= hardCap);
+        // sanity check, ensure we allocate more than 0
+        require(_tokens > 0);
+        // all tokens can be bonuses, but they cant be less than bonuses
+        require(_tokens >= _bonus);
+
+        // ensure we are not over phase 1 cap after this contribution
         if (crowdsalePhase == CrowdsalePhase.PhaseOne) {
-            require( totalCentsGathered + _contribution <= phaseOneCap );
+            require(safeAdd(totalCentsGathered, _contribution) <= phaseOneCap);
         }
 
         uint remainingContribution = _contribution;
@@ -149,34 +161,32 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
         // Check if the contribution fills the current bonus phase. If so, break it up in parts,
         // mint tokens for each part separately, assign bonuses, trigger events. For transparency.
         do {
-            // 1 - calculate contribution part for current bonus stage
-            uint centsLeftInPhase = calculateCentsLeftInPhase( remainingContribution );
-            uint contributionPart = min( remainingContribution, centsLeftInPhase );
+          // 1 - calculate contribution part for current bonus stage
+          uint centsLeftInPhase = calculateCentsLeftInPhase(remainingContribution);
+          uint contributionPart = min(remainingContribution, centsLeftInPhase);
 
-            // 2 - mint tokens
-            uint tokensToMint = safeMul( tokenRate, contributionPart );
-            mintAndUpdate( _beneficiary, tokensToMint );
-            TokensAllocated( _beneficiary, contributionPart, tokensToMint );
+          // 3 - log the processed part of the contribution
+          totalCentsGathered = safeAdd(totalCentsGathered, contributionPart);
+          remainingContribution = safeSub(remainingContribution, contributionPart);
 
-            // 3 - log the processed part of the contribution
-            totalCentsGathered = safeAdd( totalCentsGathered, contributionPart );
-            remainingContribution = safeSub( remainingContribution, contributionPart );
+          // 4 - advance bonus phase
+          if ((remainingContribution == centsLeftInPhase) && (bonusPhase != BonusPhase.None)) {
+              advanceBonusPhase();
+          }
 
-            // 4 - advance bonus phase
-            if ((remainingContribution == centsLeftInPhase) && (bonusPhase != BonusPhase.None)) {
-                advanceBonusPhase();
-            }
-
-            // 5 - log the processed part of the contribution
-            totalCentsGathered = safeAdd( totalCentsGathered, contributionPart );
-            remainingContribution = safeSub( remainingContribution, contributionPart );
-
-            // 6 - continue?
         } while (remainingContribution > 0);
 
-        // Mint custom bonus
-        mintAndUpdate( _beneficiary, _bonus );
-        BonusIssued (_beneficiary, _bonus );
+        // add tokens to the beneficiary
+        mintAndUpdate(_beneficiary, _tokens);
+
+        // dispatch token issue event
+        TokensAllocated(_beneficiary, _contribution, _tokens);
+
+        // dispatch bonus issued event
+        uint normalizedBonus = safeSub(_tokens, _bonus);
+        if (normalizedBonus > 0) {
+          BonusIssued(_beneficiary, normalizedBonus);
+        }
     }
 
     /**
@@ -200,34 +210,34 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
         if (crowdsalePhase == CrowdsalePhase.PhaseOne) {
             vestingWallet = new VestingWallet(foundersWallet, address(tokenContract));
             tokenContract.mint(address(vestingWallet), tokensForFounders);
-            FoundersAndPartnersTokensIssued(address(vestingWallet), tokensForFounders, 
+            FoundersAndPartnersTokensIssued(address(vestingWallet), tokensForFounders,
                                             partnersWallet,         tokensForPartners);
 
-            // Store the total sum collected during phase one for calculations in phase two. 
+            // Store the total sum collected during phase one for calculations in phase two.
             centsInPhaseOne = totalCentsGathered;
             tokensDuringPhaseOne = totalTokenSupply;
-            // Enable token transfer.   
+            // Enable token transfer.
             tokenContract.unfreeze();
             crowdsalePhase = CrowdsalePhase.BetweenPhases;
         } else {
             tokenContract.mint(address(vestingWallet), tokensForFounders);
             vestingWallet.launchVesting();
-            FoundersAndPartnersTokensIssued(address(vestingWallet), tokensForFounders, 
+            FoundersAndPartnersTokensIssued(address(vestingWallet), tokensForFounders,
                                             partnersWallet,         tokensForPartners);
           crowdsalePhase = CrowdsalePhase.Finished;
         }
-        
+
       tokenContract.endMinting();
    }
 
     /**
-     * @dev Set the CAPP / USD rate for Phase two, and then start the second phase of token allocation. 
+     * @dev Set the CAPP / USD rate for Phase two, and then start the second phase of token allocation.
      *        Can only be called by the crowdsale manager.
      * _tokenRate How many CAPP per 1 USD cent. As dollars, CAPP has two decimals.
      *            For instance: tokenRate = 125 means "1.25 CAPP per USD cent" <=> "125 CAPP per USD".
      */
     function beginPhaseTwo(uint _tokenRate) external onlyManager {
-        require( crowdsalePhase == CrowdsalePhase.BetweenPhases );
+        require(crowdsalePhase == CrowdsalePhase.BetweenPhases);
         require(_tokenRate != 0);
 
         tokenRate = _tokenRate;
@@ -238,28 +248,28 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
 
     // INTERNAL FUNCTIONS
     // ====================
-    function calculateCentsLeftInPhase (uint _remainingContribution)
-                    internal 
-                    returns(uint) {
+    function calculateCentsLeftInPhase(uint _remainingContribution) internal view returns(uint) {
         // Ten percent bonuses happen in both Phase One and Phase two, therefore:
         // Take the bonus tier size, subtract the total money gathered in the current phase
         if (bonusPhase == BonusPhase.TenPercent) {
-            return safeSub( bonusTierSize, 
-                            safeSub( totalCentsGathered, 
-                                     centsInPhaseOne ) );
-        } else if (bonusPhase == BonusPhase.FivePercent) {
-            // Five percent bonuses only happen in Phase One, so no need to account
-            // for the first phase separately.
-            return safeSub( safeMul(bonusTierSize, 2), totalCentsGathered );
-        } else return _remainingContribution;
+            return safeSub(bonusTierSize, safeSub(totalCentsGathered, centsInPhaseOne));
+        }
+
+        if (bonusPhase == BonusPhase.FivePercent) {
+          // Five percent bonuses only happen in Phase One, so no need to account
+          // for the first phase separately.
+          return safeSub(safeMul(bonusTierSize, 2), totalCentsGathered);
+        }
+
+        return _remainingContribution;
     }
 
     function mintAndUpdate(address _beneficiary, uint _tokensToMint) internal {
-        tokenContract.mint( _beneficiary, _tokensToMint );
-        totalTokenSupply = safeAdd( totalTokenSupply, _tokensToMint );
+        tokenContract.mint(_beneficiary, _tokensToMint);
+        totalTokenSupply = safeAdd(totalTokenSupply, _tokensToMint);
     }
 
-    function calculateTierBonus(uint _contribution) constant internal returns (uint ) {
+    function calculateTierBonus(uint _contribution) constant internal returns (uint) {
         // All bonuses are additive and not multiplicative
         // Calculate bonus on contribution size, then convert it to bonus tokens.
         uint tierBonus = 0;
@@ -269,10 +279,10 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
         if (bonusPhase == BonusPhase.TenPercent) {
             tierBonus = safeDiv(_contribution, 10);
         } else if (bonusPhase == BonusPhase.FivePercent) {
-            tierBonus = safeDiv( safeMul(_contribution, 5), 100 );
+            tierBonus = safeDiv(safeMul(_contribution, 5), 100);
         }
 
-        tierBonus = safeMul( tierBonus, tokenRate );
+        tierBonus = safeMul(tierBonus, tokenRate);
         return tierBonus;
     }
 
@@ -281,12 +291,14 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
         if (crowdsalePhase == CrowdsalePhase.PhaseOne) {
             // 5% for contributions above bigContributionBound
             if (_contribution >= bigContributionBound)  {
-                sizeBonus = safeDiv( safeMul(_contribution, 5), 100 );
+                sizeBonus = safeDiv(safeMul(_contribution, 5), 100);
             }
+
             // additional 5% for contributions above hugeContributionBound, 10% total
-            if (_contribution >= hugeContributionBound) { 
+            if (_contribution >= hugeContributionBound) {
                 sizeBonus = safeMul(sizeBonus, 2);
             }
+
             sizeBonus = safeMul(sizeBonus, tokenRate);
         }
         return sizeBonus;
@@ -298,7 +310,7 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
      */
     function advanceBonusPhase() internal onlyValidPhase {
         if (crowdsalePhase == CrowdsalePhase.PhaseOne) {
-            if (bonusPhase == BonusPhase.TenPercent) { 
+            if (bonusPhase == BonusPhase.TenPercent) {
                 bonusPhase = BonusPhase.FivePercent;
             } else if (bonusPhase == BonusPhase.FivePercent) {
                 bonusPhase = BonusPhase.None;
@@ -314,23 +326,23 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
     }
 
     modifier onlyValidPhase() {
-        require( crowdsalePhase == CrowdsalePhase.PhaseOne 
+        require( crowdsalePhase == CrowdsalePhase.PhaseOne
                  || crowdsalePhase == CrowdsalePhase.PhaseTwo );
         _;
     }
-    
+
     modifier onlyManager() {
-        require( msg.sender == icoManager );
+        require(msg.sender == icoManager);
         _;
     }
 
     modifier onlyOffChain() {
-        require( msg.sender == icoBackend );
+        require(msg.sender == icoBackend);
         _;
     }
 
     // Do not allow to send money directly to this contract
-    function() payable {
-         revert();
+    function() payable public {
+        revert();
     }
 }
