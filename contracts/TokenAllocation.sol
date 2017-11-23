@@ -10,7 +10,9 @@ import './VestingWallet.sol';
     *      Written with OpenZeppelin sources as a rough reference.
     */
 
-contract TokenAllocation is GenericCrowdsale, SafeMath {
+contract TokenAllocation is GenericCrowdsale {
+    using SafeMath for uint;
+
     // Events
     event TokensAllocated(address _beneficiary, uint _contribution, uint _tokensIssued);
     event BonusIssued(address _beneficiary, uint _bonusTokensIssued);
@@ -84,10 +86,11 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
      * @param _contribution Size of the contribution (in USD cents).
      */
     function issueTokens(address _beneficiary, uint _contribution) external onlyOffChain onlyValidPhase onlyUnpaused {
-        require(safeAdd(totalCentsGathered, _contribution) <= hardCap);
-
+        // phase 1 cap less than hard cap
         if (crowdsalePhase == CrowdsalePhase.PhaseOne) {
-            require(safeAdd(totalCentsGathered, _contribution) <= phaseOneCap);
+            require(totalCentsGathered.add(_contribution) <= phaseOneCap);
+        } else {
+            require(totalCentsGathered.add(_contribution) <= hardCap);
         }
 
         uint remainingContribution = _contribution;
@@ -100,7 +103,7 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
             uint contributionPart = min(remainingContribution, centsLeftInPhase);
 
             // 3 - mint tokens
-            uint tokensToMint = safeMul(tokenRate, contributionPart);
+            uint tokensToMint = tokenRate.mul(contributionPart);
             mintAndUpdate(_beneficiary, tokensToMint);
             TokensAllocated(_beneficiary, contributionPart, tokensToMint);
 
@@ -117,8 +120,8 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
             }
 
             // 6 - log the processed part of the contribution
-            totalCentsGathered = safeAdd(totalCentsGathered, contributionPart);
-            remainingContribution = safeSub(remainingContribution, contributionPart);
+            totalCentsGathered = totalCentsGathered.add(contributionPart);
+            remainingContribution = remainingContribution.sub(contributionPart);
 
             // 7 - continue?
         } while (remainingContribution > 0);
@@ -144,16 +147,17 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
     function issueTokensWithCustomBonus(address _beneficiary, uint _contribution, uint _tokens, uint _bonus)
                                             onlyOffChain onlyValidPhase onlyUnpaused external {
 
-        // ensure we are not over hard cap after this contribution
-        require(safeAdd(totalCentsGathered, _contribution) <= hardCap);
         // sanity check, ensure we allocate more than 0
         require(_tokens > 0);
         // all tokens can be bonuses, but they cant be less than bonuses
         require(_tokens >= _bonus);
-
-        // ensure we are not over phase 1 cap after this contribution
+        // check capps
         if (crowdsalePhase == CrowdsalePhase.PhaseOne) {
-            require(safeAdd(totalCentsGathered, _contribution) <= phaseOneCap);
+            // ensure we are not over phase 1 cap after this contribution
+            require(totalCentsGathered.add(_contribution) <= phaseOneCap);
+        } else {
+            // ensure we are not over hard cap after this contribution
+            require(totalCentsGathered.add(_contribution) <= hardCap);
         }
 
         uint remainingContribution = _contribution;
@@ -166,8 +170,8 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
           uint contributionPart = min(remainingContribution, centsLeftInPhase);
 
           // 3 - log the processed part of the contribution
-          totalCentsGathered = safeAdd(totalCentsGathered, contributionPart);
-          remainingContribution = safeSub(remainingContribution, contributionPart);
+          totalCentsGathered = totalCentsGathered.add(contributionPart);
+          remainingContribution = remainingContribution.sub(contributionPart);
 
           // 4 - advance bonus phase
           if ((remainingContribution == centsLeftInPhase) && (bonusPhase != BonusPhase.None)) {
@@ -183,7 +187,7 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
         TokensAllocated(_beneficiary, _contribution, _tokens);
 
         // dispatch bonus issued event
-        uint normalizedBonus = safeSub(_tokens, _bonus);
+        uint normalizedBonus = _tokens.sub(_bonus);
         if (normalizedBonus > 0) {
           BonusIssued(_beneficiary, normalizedBonus);
         }
@@ -202,8 +206,8 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
 
         // Total tokens sold is 70% of the overall supply, founders' share is 18%, early contributors' is 12%
         // So to obtain those from tokens sold, multiply them by 0.18 / 0.7 and 0.12 / 0.7 respectively.
-        uint tokensForFounders = safeDiv(safeMul(tokensDuringThisPhase, 257), 1000); // 0.257 of 0.7 is 0.18 of 1
-        uint tokensForPartners = safeDiv(safeMul(tokensDuringThisPhase, 171), 1000); // 0.171 of 0.7 is 0.12 of 1
+        uint tokensForFounders = tokensDuringThisPhase.mul(257).div(1000); // 0.257 of 0.7 is 0.18 of 1
+        uint tokensForPartners = tokensDuringThisPhase.mul(171).div(1000); // 0.171 of 0.7 is 0.12 of 1
 
         tokenContract.mint(partnersWallet, tokensForPartners);
 
@@ -252,13 +256,13 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
         // Ten percent bonuses happen in both Phase One and Phase two, therefore:
         // Take the bonus tier size, subtract the total money gathered in the current phase
         if (bonusPhase == BonusPhase.TenPercent) {
-            return safeSub(bonusTierSize, safeSub(totalCentsGathered, centsInPhaseOne));
+            return bonusTierSize.sub(totalCentsGathered.sub(centsInPhaseOne));
         }
 
         if (bonusPhase == BonusPhase.FivePercent) {
           // Five percent bonuses only happen in Phase One, so no need to account
           // for the first phase separately.
-          return safeSub(safeMul(bonusTierSize, 2), totalCentsGathered);
+          return bonusTierSize.mul(2).sub(totalCentsGathered);
         }
 
         return _remainingContribution;
@@ -266,7 +270,7 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
 
     function mintAndUpdate(address _beneficiary, uint _tokensToMint) internal {
         tokenContract.mint(_beneficiary, _tokensToMint);
-        totalTokenSupply = safeAdd(totalTokenSupply, _tokensToMint);
+        totalTokenSupply = totalTokenSupply.add(_tokensToMint);
     }
 
     function calculateTierBonus(uint _contribution) constant internal returns (uint) {
@@ -277,29 +281,27 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
         // tierBonus tier tierBonuses. We make sure in issueTokens that the processed contribution \
         // falls entirely into one tier
         if (bonusPhase == BonusPhase.TenPercent) {
-            tierBonus = safeDiv(_contribution, 10);
+            tierBonus = _contribution.div(10); // multiply by 0.1
         } else if (bonusPhase == BonusPhase.FivePercent) {
-            tierBonus = safeDiv(safeMul(_contribution, 5), 100);
+            tierBonus = _contribution.div(20); // multiply by 0.05
         }
 
-        tierBonus = safeMul(tierBonus, tokenRate);
+        tierBonus = tierBonus.mul(tokenRate);
         return tierBonus;
     }
 
     function calculateSizeBonus(uint _contribution) constant internal returns (uint) {
         uint sizeBonus = 0;
         if (crowdsalePhase == CrowdsalePhase.PhaseOne) {
-            // 5% for contributions above bigContributionBound
-            if (_contribution >= bigContributionBound)  {
-                sizeBonus = safeDiv(safeMul(_contribution, 5), 100);
-            }
-
-            // additional 5% for contributions above hugeContributionBound, 10% total
+            // 10% for huge contribution
             if (_contribution >= hugeContributionBound) {
-                sizeBonus = safeMul(sizeBonus, 2);
+                sizeBonus = _contribution.div(10); // multiply by 0.1
+            // 5% for big one
+            } else if (_contribution >= bigContributionBound) {
+                sizeBonus = _contribution.div(20); // multiply by 0.05
             }
 
-            sizeBonus = safeMul(sizeBonus, tokenRate);
+            sizeBonus = sizeBonus.mul(tokenRate);
         }
         return sizeBonus;
     }

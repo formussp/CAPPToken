@@ -28,19 +28,29 @@ contract Cappasity is StandardToken {
 
   // ERC20 functions
   // =========================
-  function transfer(address _to, uint _value) public returns (bool) {
+  function transfer(address _to, uint _value) public returns (bool success) {
     require(!tokensAreFrozen);
-    super.transfer(_to, _value);
+    return super.transfer(_to, _value);
   }
 
-  function transferFrom(address _from, address _to, uint _value) public returns (bool) {
+  function transferFrom(address _from, address _to, uint _value) public returns (bool success) {
     require(!tokensAreFrozen);
-    super.transferFrom(_from, _to, _value);
+    return super.transferFrom(_from, _to, _value);
   }
 
-  function approve(address _spender, uint _value) public returns (bool) {
+  function approve(address _spender, uint _value) public returns (bool success) {
     require(!tokensAreFrozen);
-    super.approve(_spender, _value);
+    return super.approve(_spender, _value);
+  }
+
+  function increaseApproval(address _spender, uint _addedValue) public returns (bool success) {
+    require(!tokensAreFrozen);
+    return super.increaseApproval(_spender, _addedValue);
+  }
+
+  function decreaseApproval(address _spender, uint _subtractedValue) public returns (bool success) {
+    require(!tokensAreFrozen);
+    return super.decreaseApproval(_spender, _subtractedValue);
   }
 
   // PRIVILEGED FUNCTIONS
@@ -53,13 +63,11 @@ contract Cappasity is StandardToken {
   // Mint some tokens and assign them to an address
   function mint(address _beneficiary, uint _value) onlyByManager external {
     require(_value != 0);
-    require(totalSupply + _value <= TOKEN_LIMIT);
-    // Making double sure uint doesn't overflow and wrap back
-    require(totalSupply + _value > totalSupply);
+    require(totalSupply.add(_value) <= TOKEN_LIMIT);
     require(mintingIsAllowed);
 
-    balances[_beneficiary] = safeAdd(balances[_beneficiary], _value);
-    totalSupply = safeAdd(totalSupply,_value);
+    balances[_beneficiary] = balances[_beneficiary].add(_value);
+    totalSupply = totalSupply.add(_value);
   }
 
   // Disable minting. Can be enabled later, but TokenAllocation.sol only does that once.

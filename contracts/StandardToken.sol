@@ -3,25 +3,27 @@ pragma solidity ^0.4.18;
 import "./ERC20.sol";
 import "./SafeMath.sol";
 
-contract StandardToken is ERC20, SafeMath {
+contract StandardToken is ERC20 {
+    using SafeMath for uint;
+
     mapping (address => uint) balances;
     mapping (address => mapping (address => uint)) allowed;
 
-    function transfer(address _to, uint _value) onlyPayloadSize(2 * 32) public returns (bool) {
+    function transfer(address _to, uint _value) onlyPayloadSize(2 * 32) public returns (bool success) {
         if (balances[msg.sender] >= _value) {
-            balances[msg.sender] = safeSub(balances[msg.sender], _value);
-            balances[_to] = safeAdd(balances[_to], _value);
+            balances[msg.sender] = balances[msg.sender].sub(_value);
+            balances[_to] = balances[_to].add(_value);
 
             Transfer(msg.sender, _to, _value);
             return true;
         } else return false;
     }
 
-    function transferFrom(address _from, address _to, uint _value) public returns (bool) {
+    function transferFrom(address _from, address _to, uint _value) public returns (bool success) {
         if ((balances[_from] >= _value) && (allowed[_from][msg.sender] >= _value)) {
-            balances[_to]   = safeAdd(balances[_to], _value);
-            balances[_from] = safeSub(balances[_from], _value);
-            allowed[_from][msg.sender] = safeSub(allowed[_from][msg.sender], _value);
+            balances[_to]   = balances[_to].add(_value);
+            balances[_from] = balances[_from].sub(_value);
+            allowed[_from][msg.sender] = allowed[_from][msg.sender].sub(_value);
             Transfer(_from, _to, _value);
             return true;
         } else return false;
@@ -45,25 +47,25 @@ contract StandardToken is ERC20, SafeMath {
         return true;
     }
 
-    function increaseApproval (address _spender, uint _addedValue) public returns (bool) {
-        allowed[msg.sender][_spender] = safeAdd(allowed[msg.sender][_spender], _addedValue);
+    function increaseApproval(address _spender, uint _addedValue) public returns (bool) {
+        allowed[msg.sender][_spender] = allowed[msg.sender][_spender].add(_addedValue);
         Approval(msg.sender, _spender, allowed[msg.sender][_spender]);
         return true;
     }
 
-    function decreaseApproval (address _spender, uint _subtractedValue) public returns (bool) {
+    function decreaseApproval(address _spender, uint _subtractedValue) public returns (bool) {
         uint oldValue = allowed[msg.sender][_spender];
         if (_subtractedValue > oldValue) {
             allowed[msg.sender][_spender] = 0;
         } else {
-            allowed[msg.sender][_spender] = safeSub(oldValue, _subtractedValue);
+            allowed[msg.sender][_spender] = oldValue.sub(_subtractedValue);
         }
         Approval(msg.sender, _spender, allowed[msg.sender][_spender]);
         return true;
     }
 
     modifier onlyPayloadSize(uint _size) {
-         require(msg.data.length >= _size + 4);
-         _;
+        require(msg.data.length >= _size + 4);
+        _;
     }
 }

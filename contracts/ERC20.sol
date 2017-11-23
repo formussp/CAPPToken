@@ -7,7 +7,7 @@ pragma solidity ^0.4.18;
 contract ERC20 {
   uint public totalSupply;
 
-  function balanceOf(address _owner) constant public returns (uint);
+  function balanceOf(address _owner) constant public returns (uint balance);
   function transfer(address _to, uint _value) public returns (bool success);
   function transferFrom(address _from, address _to, uint _value) public returns (bool success);
   function approve(address _spender, uint _value) public returns (bool success);

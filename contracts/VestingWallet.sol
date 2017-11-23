@@ -7,7 +7,9 @@ import "./SafeMath.sol";
   /**
    * @dev For the tokens issued for founders.
    */
-contract VestingWallet is SafeMath {
+contract VestingWallet {
+    using SafeMath for uint;
+
     event TokensReleased(uint _tokensReleased, uint _tokensRemaining, uint _nextPeriod);
 
     address public foundersWallet;
@@ -27,26 +29,26 @@ contract VestingWallet is SafeMath {
     // Constructor
     // ===========
     function VestingWallet(address _foundersWallet, address _tokenContract) public {
-        require(0x0!=_foundersWallet);
-        require(0x0!=_tokenContract);
+        require(0x0 != _foundersWallet);
+        require(0x0 != _tokenContract);
 
-        foundersWallet  = _foundersWallet;
-        tokenContract   = ERC20(_tokenContract);
+        foundersWallet    = _foundersWallet;
+        tokenContract     = ERC20(_tokenContract);
         crowdsaleContract = msg.sender;
     }
 
     // PRIVILEGED FUNCTIONS
     // ====================
     function releaseBatch() external onlyFounders {
-        require( true == vestingStarted );
-        require( now > nextPeriod );
-        require( periodsPassed < totalPeriods );
+        require(true == vestingStarted);
+        require(now > nextPeriod);
+        require(periodsPassed < totalPeriods);
 
         uint tokensToRelease = 0;
         do {
-            periodsPassed   = safeAdd(periodsPassed, 1);
-            nextPeriod      = safeAdd(nextPeriod, cliffPeriod);
-            tokensToRelease = safeAdd(tokensToRelease, tokensPerBatch);
+            periodsPassed   = periodsPassed.add(1);
+            nextPeriod      = nextPeriod.add(cliffPeriod);
+            tokensToRelease = tokensToRelease.add(tokensPerBatch);
         } while (now > nextPeriod);
 
         // If vesting has finished, just transfer the remaining tokens.
@@ -55,7 +57,7 @@ contract VestingWallet is SafeMath {
             nextPeriod = 0x0;
         }
 
-        tokensRemaining = safeSub(tokensRemaining, tokensToRelease);
+        tokensRemaining = tokensRemaining.sub(tokensToRelease);
         tokenContract.transfer(foundersWallet, tokensToRelease);
 
         TokensReleased(tokensToRelease, tokensRemaining, nextPeriod);
@@ -66,7 +68,7 @@ contract VestingWallet is SafeMath {
 
         vestingStarted  = true;
         tokensRemaining = tokenContract.balanceOf(this);
-        nextPeriod      = safeAdd(now, cliffPeriod);
+        nextPeriod      = now.add(cliffPeriod);
         tokensPerBatch  = tokensRemaining / totalPeriods;
     }
 

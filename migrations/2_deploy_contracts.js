@@ -15,4 +15,4 @@ var partnersWallet = "0xb8d3051d9a97247e592cbc49a1dc14cfa2c0aee0"; // Public key
 
 module.exports = function(deployer) {
   deployer.deploy(TokenAllocation, icoManager, icoBackend, foundersWallet, partnersWallet);
-}; 
+};
