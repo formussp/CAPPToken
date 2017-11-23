@@ -323,8 +323,7 @@ contract TokenAllocation is GenericCrowdsale {
     }
 
     function min(uint _a, uint _b) internal pure returns (uint result) {
-        if (_a < _b) return _a;
-        else return _b;
+        return _a < _b ? _a : _b;
     }
 
     modifier onlyValidPhase() {

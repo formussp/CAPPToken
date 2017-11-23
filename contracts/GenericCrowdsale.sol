@@ -52,7 +52,7 @@ contract GenericCrowdsale {
     /**
      * @dev Pauses the token allocation process.
      */
-    function pause() onlyManager external {
+    function pause() onlyManager onlyUnpaused external {
         paused = true;
         Paused();
     }
@@ -60,7 +60,7 @@ contract GenericCrowdsale {
     /**
      * @dev Unpauses the token allocation process.
      */
-    function unpause() onlyManager external {
+    function unpause() onlyManager onlyPaused external {
         paused = false;
         Unpaused();
     }
@@ -80,17 +80,22 @@ contract GenericCrowdsale {
     function rewardFoundersAndPartners() onlyBackend onlyUnpaused external;
 
     modifier onlyManager() {
-        require( msg.sender == icoManager );
+        require(msg.sender == icoManager);
         _;
     }
 
     modifier onlyBackend() {
-        require( msg.sender == icoBackend );
+        require(msg.sender == icoBackend);
+        _;
+    }
+
+    modifier onlyPaused() {
+        require(paused == true);
         _;
     }
 
     modifier onlyUnpaused() {
-        require( paused == false );
+        require(paused == false);
         _;
     }
 }
