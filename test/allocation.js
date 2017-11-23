@@ -1,4 +1,3 @@
-
 const web3 = global.web3;
 
 const ERC20 = artifacts.require("./ERC20.sol");
@@ -452,7 +451,7 @@ contract("allocation", function(accounts) {
                     totalSupply * 1805 / 10000,
                     "wrong number of tokens for founders");
 
-        let vestingWallet = await(allocation.vestingWallet());
+        let vestingWallet = await allocation.vestingWallet();
         let vestingBalance = await token.balanceOf(vestingWallet);
 
         assert.equal(Number(vestingBalance),

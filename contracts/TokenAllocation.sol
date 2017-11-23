@@ -5,11 +5,10 @@ import './GenericCrowdsale.sol';
 import './SafeMath.sol';
 import './VestingWallet.sol';
 
-   /**
-    * @dev Prepaid token allocation for a capped crowdsale with bonus structure sliding on sales
-    *      Written with OpenZeppelin sources as a rough reference.
-    */
-
+/**
+* @dev Prepaid token allocation for a capped crowdsale with bonus structure sliding on sales
+*      Written with OpenZeppelin sources as a rough reference.
+*/
 contract TokenAllocation is GenericCrowdsale {
     using SafeMath for uint;
 
@@ -21,7 +20,7 @@ contract TokenAllocation is GenericCrowdsale {
 
     // Token information
     uint public tokenRate = 125; // 1 USD = 125 CAPP; so 1 cent = 1.25 CAPP \
-                                   // assuming CAPP has 2 decimals (as set in token contract)
+                                 // assuming CAPP has 2 decimals (as set in token contract)
     Cappasity public tokenContract;
 
     address public foundersWallet; // A wallet permitted to request tokens from the time vaults.
@@ -183,13 +182,14 @@ contract TokenAllocation is GenericCrowdsale {
         // add tokens to the beneficiary
         mintAndUpdate(_beneficiary, _tokens);
 
-        // dispatch token issue event
-        TokensAllocated(_beneficiary, _contribution, _tokens);
+        // if bonus exists
+        if (_bonus > 0) {
+          BonusIssued(_beneficiary, _bonus);
+        }
 
-        // dispatch bonus issued event
-        uint normalizedBonus = _tokens.sub(_bonus);
-        if (normalizedBonus > 0) {
-          BonusIssued(_beneficiary, normalizedBonus);
+        // if tokens arent equal to bonus
+        if (_tokens > _bonus) {
+          TokensAllocated(_beneficiary, _contribution, _tokens.sub(_bonus));
         }
     }
 
@@ -220,18 +220,20 @@ contract TokenAllocation is GenericCrowdsale {
             // Store the total sum collected during phase one for calculations in phase two.
             centsInPhaseOne = totalCentsGathered;
             tokensDuringPhaseOne = totalTokenSupply;
+
             // Enable token transfer.
             tokenContract.unfreeze();
             crowdsalePhase = CrowdsalePhase.BetweenPhases;
         } else {
             tokenContract.mint(address(vestingWallet), tokensForFounders);
             vestingWallet.launchVesting();
+
             FoundersAndPartnersTokensIssued(address(vestingWallet), tokensForFounders,
                                             partnersWallet,         tokensForPartners);
-          crowdsalePhase = CrowdsalePhase.Finished;
+            crowdsalePhase = CrowdsalePhase.Finished;
         }
 
-      tokenContract.endMinting();
+        tokenContract.endMinting();
    }
 
     /**
@@ -248,6 +250,21 @@ contract TokenAllocation is GenericCrowdsale {
         crowdsalePhase = CrowdsalePhase.PhaseTwo;
         bonusPhase = BonusPhase.TenPercent;
         tokenContract.startMinting();
+    }
+
+    /**
+     * @dev Allows to freeze all token transfers in the future
+     * This is done to allow migrating to new contract in the future
+     * If such need ever arises (ie Migration to ERC23, or anything that community decides worth doing)
+     */
+    function freeze() external onlyManager {
+        require(crowdsalePhase == CrowdsalePhase.Finished);
+        tokenContract.freeze();
+    }
+
+    function unfreeze() external onlyManager {
+        require(crowdsalePhase == CrowdsalePhase.Finished);
+        tokenContract.unfreeze();
     }
 
     // INTERNAL FUNCTIONS
@@ -326,6 +343,9 @@ contract TokenAllocation is GenericCrowdsale {
         return _a < _b ? _a : _b;
     }
 
+    /**
+     * Modifiers
+     */
     modifier onlyValidPhase() {
         require( crowdsalePhase == CrowdsalePhase.PhaseOne
                  || crowdsalePhase == CrowdsalePhase.PhaseTwo );

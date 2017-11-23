@@ -56,32 +56,41 @@ contract Cappasity is StandardToken {
   // PRIVILEGED FUNCTIONS
   // ====================
   modifier onlyByManager() {
-    require(msg.sender == manager);
-    _;
+      require(msg.sender == manager);
+      _;
   }
 
   // Mint some tokens and assign them to an address
   function mint(address _beneficiary, uint _value) onlyByManager external {
-    require(_value != 0);
-    require(totalSupply.add(_value) <= TOKEN_LIMIT);
-    require(mintingIsAllowed);
+      require(_value != 0);
+      require(totalSupply.add(_value) <= TOKEN_LIMIT);
+      require(mintingIsAllowed == true);
 
-    balances[_beneficiary] = balances[_beneficiary].add(_value);
-    totalSupply = totalSupply.add(_value);
+      balances[_beneficiary] = balances[_beneficiary].add(_value);
+      totalSupply = totalSupply.add(_value);
   }
 
   // Disable minting. Can be enabled later, but TokenAllocation.sol only does that once.
   function endMinting() onlyByManager external {
-    mintingIsAllowed = false;
+      require(mintingIsAllowed == true);
+      mintingIsAllowed = false;
   }
 
   // Enable minting. See TokenAllocation.sol
   function startMinting() onlyByManager external {
-    mintingIsAllowed = true;
+      require(mintingIsAllowed == false);
+      mintingIsAllowed = true;
   }
 
   // Allow token transfer
   function unfreeze() onlyByManager external {
-    tokensAreFrozen = false;
+      require(tokensAreFrozen == true);
+      tokensAreFrozen = false;
+  }
+
+  // Disable token transfer
+  function freeze() onlyByManager external {
+      require(tokensAreFrozen == false);
+      tokensAreFrozen = true;
   }
 }
