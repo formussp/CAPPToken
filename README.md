@@ -1,6 +1,6 @@
 
 ## Overview
-ARToken with ERC20 functionality.
+Cappasity Token (CAPP) with ERC20 functionality.
 
 www.artoken.io
 www.cappasity.com
