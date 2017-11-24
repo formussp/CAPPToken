@@ -1,7 +1,7 @@
 pragma solidity ^0.4.18;
 
-import "./ERC20.sol";
-import "./SafeMath.sol";
+import "../ERC20.sol";
+import "../../libraries/SafeMath.sol";
 
 contract StandardToken is ERC20 {
     using SafeMath for uint;

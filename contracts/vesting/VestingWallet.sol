@@ -1,7 +1,7 @@
 pragma solidity ^0.4.18;
 
-import "./ERC20.sol";
-import "./SafeMath.sol";
+import "../ERC20.sol";
+import "../../libraries/SafeMath.sol";
 
   /**
    * @dev For the tokens issued for founders.

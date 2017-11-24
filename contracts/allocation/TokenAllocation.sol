@@ -1,9 +1,9 @@
 pragma solidity ^0.4.18;
 
-import './Cappasity.sol';
 import './GenericCrowdsale.sol';
-import './SafeMath.sol';
-import './VestingWallet.sol';
+import '../capp/Cappasity.sol';
+import '../vesting/VestingWallet.sol';
+import "../../libraries/SafeMath.sol";
 
 /**
 * @dev Prepaid token allocation for a capped crowdsale with bonus structure sliding on sales
