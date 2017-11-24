@@ -18,7 +18,17 @@ contract Cappasity is StandardToken {
 
   // Block token transfers until ICO is finished.
   bool public tokensAreFrozen = true;
+
+  // Allow/Disallow minting
   bool public mintingIsAllowed = true;
+
+  // events for minting
+  event MintingAllowed();
+  event MintingDisabled();
+
+  // Freeze/Unfreeze assets
+  event TokensFrozen();
+  event TokensUnfrozen();
 
   // Constructor
   // ===========
@@ -61,7 +71,7 @@ contract Cappasity is StandardToken {
   }
 
   // Mint some tokens and assign them to an address
-  function mint(address _beneficiary, uint _value) onlyByManager external {
+  function mint(address _beneficiary, uint _value) external onlyByManager {
       require(_value != 0);
       require(totalSupply.add(_value) <= TOKEN_LIMIT);
       require(mintingIsAllowed == true);
@@ -71,26 +81,30 @@ contract Cappasity is StandardToken {
   }
 
   // Disable minting. Can be enabled later, but TokenAllocation.sol only does that once.
-  function endMinting() onlyByManager external {
+  function endMinting() external onlyByManager {
       require(mintingIsAllowed == true);
       mintingIsAllowed = false;
+      MintingDisabled();
   }
 
   // Enable minting. See TokenAllocation.sol
-  function startMinting() onlyByManager external {
+  function startMinting() external onlyByManager {
       require(mintingIsAllowed == false);
       mintingIsAllowed = true;
-  }
-
-  // Allow token transfer
-  function unfreeze() onlyByManager external {
-      require(tokensAreFrozen == true);
-      tokensAreFrozen = false;
+      MintingAllowed();
   }
 
   // Disable token transfer
-  function freeze() onlyByManager external {
+  function freeze() external onlyByManager {
       require(tokensAreFrozen == false);
       tokensAreFrozen = true;
+      TokensFrozen();
+  }
+
+  // Allow token transfer
+  function unfreeze() external onlyByManager {
+      require(tokensAreFrozen == true);
+      tokensAreFrozen = false;
+      TokensUnfrozen();
   }
 }
