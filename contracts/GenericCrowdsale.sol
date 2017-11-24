@@ -1,9 +1,11 @@
-
 pragma solidity ^0.4.18;
 
 contract GenericCrowdsale {
     address public icoBackend;
     address public icoManager;
+    address public emergencyManager;
+
+    // paused state
     bool paused = false;
 
     /**
@@ -13,12 +15,14 @@ contract GenericCrowdsale {
      * @param _tokensIssued The amount of tokens that was assigned to the holder, not counting bonuses.
      */
     event TokensAllocated(address _beneficiary, uint _contribution, uint _tokensIssued);
+
     /**
      * @dev Notifies about bonus token issuance. Is raised even if the bonus is 0.
      * @param _beneficiary Token holder.
      * @param _bonusTokensIssued The amount of bonus tokens that was assigned to the holder.
      */
     event BonusIssued(address _beneficiary, uint _bonusTokensIssued);
+
     /**
      * @dev Issues tokens for founders and partners and closes the current phase.
      * @param foundersWallet Wallet address holding the vested tokens.
@@ -28,6 +32,7 @@ contract GenericCrowdsale {
      */
     event FoundersAndPartnersTokensIssued(address foundersWallet, uint tokensForFounders,
                                           address partnersWallet, uint tokensForPartners);
+
     event Paused();
     event Unpaused();
 
@@ -41,7 +46,7 @@ contract GenericCrowdsale {
 
     /**
      * @dev Issues tokens for the off-chain contributors by accepting calls from the trusted address.
-     *        Supposed to be run by the backend.
+     *      Supposed to be run by the backend.
      * @param _beneficiary Token holder.
      * @param _contribution The equivalent (in USD cents) of the contribution received off-chain.
      * @param _tokens Total Tokens to issue for the contribution, must be > 0
@@ -52,7 +57,7 @@ contract GenericCrowdsale {
     /**
      * @dev Pauses the token allocation process.
      */
-    function pause() onlyManager onlyUnpaused external {
+    function pause() external onlyManager onlyUnpaused {
         paused = true;
         Paused();
     }
@@ -60,7 +65,7 @@ contract GenericCrowdsale {
     /**
      * @dev Unpauses the token allocation process.
      */
-    function unpause() onlyManager onlyPaused external {
+    function unpause() external onlyManager onlyPaused {
         paused = false;
         Unpaused();
     }
@@ -68,7 +73,7 @@ contract GenericCrowdsale {
     /**
      * @dev Allows the manager to change backends.
      */
-    function changeicoBackend(address _icoBackend) onlyManager external {
+    function changeicoBackend(address _icoBackend) external onlyManager {
         icoBackend = _icoBackend;
     }
 
@@ -86,6 +91,11 @@ contract GenericCrowdsale {
 
     modifier onlyBackend() {
         require(msg.sender == icoBackend);
+        _;
+    }
+
+    modifier onlyEmergency() {
+        require(msg.sender == emergencyManager);
         _;
     }
 

@@ -12,7 +12,15 @@ var icoManager = "0x7fb504439b8a99cf1e31dfd0490fd19a7bb502d0";     // Public key
 var icoBackend = "0x7fb504439b8a99cf1e31dfd0490fd19a7bb502d0";     // Public key for the backend script that mints tokens
 var foundersWallet = "0xb8d3051d9a97247e592cbc49a1dc14cfa2c0aee0"; // Public key of Kosta's wallet that will receive tokens after vesting
 var partnersWallet = "0xb8d3051d9a97247e592cbc49a1dc14cfa2c0aee0"; // Public key of the wallet that allocates early contributors' bonus
+var emergencyManager = "0xb8d3051d9a97247e592cbc49a1dc14cfa2c0aee0"; // Public key of the wallet that can perform emergency functions
 
 module.exports = function(deployer) {
-  deployer.deploy(TokenAllocation, icoManager, icoBackend, foundersWallet, partnersWallet);
+  deployer.deploy(
+    TokenAllocation,
+    icoManager,
+    icoBackend,
+    foundersWallet,
+    partnersWallet,
+    emergencyManager
+  );
 };

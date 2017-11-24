@@ -1,5 +1,9 @@
 {
   "dependencies": {
     "lodash": "^4.17.4"
+  },
+  "devDependencies": {
+    "ganache-cli": "^6.0.3",
+    "truffle": "^4.0.1"
   }
 }

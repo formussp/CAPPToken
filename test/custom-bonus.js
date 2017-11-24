@@ -13,7 +13,8 @@ contract('TokenAllocation', (_accounts) => {
   const accounts = _accounts.slice(0, 4);
   const anonymous = _accounts[4];
   const friend = _accounts[5];
-  const [icoManager, icoBackend, foundersWallet, partnersWallet] = accounts;
+  const [icoManager, icoBackend, foundersWallet, partnersWallet] = _accounts;
+  const emergencyManager = _accounts[9];
 
   const throwsOpcode = async (contract, args, called = { from: anonymous }) => {
     args.forEach(async ([method, ...data]) => {
@@ -27,11 +28,12 @@ contract('TokenAllocation', (_accounts) => {
   };
 
   before('init contract', () => (
-    TokenAllocation.new(...accounts, { gas: 6500000 }).then(async (res) => {
-      assert.isOk(res && res.address, 'should have valid address');
-      this.contract = res;
-      this.capp = Cappasity.at(await this.contract.tokenContract());
-    })
+    TokenAllocation
+      .new(...accounts, emergencyManager, { gas: 6500000 }).then(async (res) => {
+        assert.isOk(res && res.address, 'should have valid address');
+        this.contract = res;
+        this.capp = Cappasity.at(await this.contract.tokenContract());
+      })
   ));
 
   it('verify initial state', async () => {

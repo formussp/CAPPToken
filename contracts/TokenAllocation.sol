@@ -61,12 +61,14 @@ contract TokenAllocation is GenericCrowdsale {
     function TokenAllocation(address _icoManager,
                              address _icoBackend,
                              address _foundersWallet,
-                             address _partnersWallet
+                             address _partnersWallet,
+                             address _emergencyManager
                              ) public {
-        require(_icoManager != 0x0);
-        require(_icoBackend != 0x0);
-        require(_foundersWallet != 0x0);
-        require(_partnersWallet != 0x0);
+        require(_icoManager != address(0));
+        require(_icoBackend != address(0));
+        require(_foundersWallet != address(0));
+        require(_partnersWallet != address(0));
+        require(_emergencyManager != address(0));
 
         tokenContract = new Cappasity(address(this));
 
@@ -74,6 +76,7 @@ contract TokenAllocation is GenericCrowdsale {
         icoBackend       = _icoBackend;
         foundersWallet   = _foundersWallet;
         partnersWallet   = _partnersWallet;
+        emergencyManager = _emergencyManager;
     }
 
     // PRIVILEGED FUNCTIONS
@@ -84,7 +87,7 @@ contract TokenAllocation is GenericCrowdsale {
      * @param _beneficiary Receiver of the tokens.
      * @param _contribution Size of the contribution (in USD cents).
      */
-    function issueTokens(address _beneficiary, uint _contribution) external onlyOffChain onlyValidPhase onlyUnpaused {
+    function issueTokens(address _beneficiary, uint _contribution) external onlyBackend onlyValidPhase onlyUnpaused {
         // phase 1 cap less than hard cap
         if (crowdsalePhase == CrowdsalePhase.PhaseOne) {
             require(totalCentsGathered.add(_contribution) <= phaseOneCap);
@@ -144,7 +147,7 @@ contract TokenAllocation is GenericCrowdsale {
      * @param _bonus Bonus size
      */
     function issueTokensWithCustomBonus(address _beneficiary, uint _contribution, uint _tokens, uint _bonus)
-                                            onlyOffChain onlyValidPhase onlyUnpaused external {
+                                            external onlyBackend onlyValidPhase onlyUnpaused {
 
         // sanity check, ensure we allocate more than 0
         require(_tokens > 0);
@@ -196,7 +199,7 @@ contract TokenAllocation is GenericCrowdsale {
     /**
      * @dev Issue tokens for founders and partners, end the current phase.
      */
-    function rewardFoundersAndPartners() external onlyOffChain onlyValidPhase onlyUnpaused {
+    function rewardFoundersAndPartners() external onlyBackend onlyValidPhase onlyUnpaused {
         uint tokensDuringThisPhase;
         if (crowdsalePhase == CrowdsalePhase.PhaseOne) {
             tokensDuringThisPhase = totalTokenSupply;
@@ -242,7 +245,7 @@ contract TokenAllocation is GenericCrowdsale {
      * _tokenRate How many CAPP per 1 USD cent. As dollars, CAPP has two decimals.
      *            For instance: tokenRate = 125 means "1.25 CAPP per USD cent" <=> "125 CAPP per USD".
      */
-    function beginPhaseTwo(uint _tokenRate) external onlyManager {
+    function beginPhaseTwo(uint _tokenRate) external onlyManager onlyUnpaused {
         require(crowdsalePhase == CrowdsalePhase.BetweenPhases);
         require(_tokenRate != 0);
 
@@ -257,13 +260,13 @@ contract TokenAllocation is GenericCrowdsale {
      * This is done to allow migrating to new contract in the future
      * If such need ever arises (ie Migration to ERC23, or anything that community decides worth doing)
      */
-    function freeze() external onlyManager {
-        require(crowdsalePhase == CrowdsalePhase.Finished);
+    function freeze() external onlyUnpaused onlyEmergency {
+        require(crowdsalePhase != CrowdsalePhase.PhaseOne);
         tokenContract.freeze();
     }
 
-    function unfreeze() external onlyManager {
-        require(crowdsalePhase == CrowdsalePhase.Finished);
+    function unfreeze() external onlyUnpaused onlyEmergency {
+        require(crowdsalePhase != CrowdsalePhase.PhaseOne);
         tokenContract.unfreeze();
     }
 
@@ -349,16 +352,6 @@ contract TokenAllocation is GenericCrowdsale {
     modifier onlyValidPhase() {
         require( crowdsalePhase == CrowdsalePhase.PhaseOne
                  || crowdsalePhase == CrowdsalePhase.PhaseTwo );
-        _;
-    }
-
-    modifier onlyManager() {
-        require(msg.sender == icoManager);
-        _;
-    }
-
-    modifier onlyOffChain() {
-        require(msg.sender == icoBackend);
         _;
     }
 

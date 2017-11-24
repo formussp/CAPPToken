@@ -1,4 +1,3 @@
-
 pragma solidity ^0.4.18;
 
 import "./ERC20.sol";
@@ -29,8 +28,8 @@ contract VestingWallet {
     // Constructor
     // ===========
     function VestingWallet(address _foundersWallet, address _tokenContract) public {
-        require(0x0 != _foundersWallet);
-        require(0x0 != _tokenContract);
+        require(_foundersWallet != address(0));
+        require(_tokenContract != address(0));
 
         foundersWallet    = _foundersWallet;
         tokenContract     = ERC20(_tokenContract);

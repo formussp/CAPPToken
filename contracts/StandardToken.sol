@@ -10,14 +10,11 @@ contract StandardToken is ERC20 {
     mapping (address => mapping (address => uint)) allowed;
 
     function transfer(address _to, uint _value) onlyPayloadSize(2 * 32) public returns (bool success) {
-        // must transfer something
-        require(_value > 0);
-        // must not transfer to self
-        require(_to != msg.sender);
-        // must not just burn
-        require(_to != address(0));
-
-        if (balances[msg.sender] >= _value) {
+        if (balances[msg.sender] >= _value
+            && _value > 0
+            && _to != msg.sender
+            && _to != address(0)
+          ) {
             balances[msg.sender] = balances[msg.sender].sub(_value);
             balances[_to] = balances[_to].add(_value);
 
@@ -29,12 +26,11 @@ contract StandardToken is ERC20 {
     }
 
     function transferFrom(address _from, address _to, uint _value) public returns (bool success) {
-        // must transfer something
-        require(_value > 0);
-        // must not transfer to oneself
-        require(_from != _to);
-
-        if ((balances[_from] >= _value) && (allowed[_from][msg.sender] >= _value)) {
+        if (balances[_from] >= _value
+            && allowed[_from][msg.sender] >= _value
+            && _value > 0
+            && _from != _to
+          ) {
             balances[_to]   = balances[_to].add(_value);
             balances[_from] = balances[_from].sub(_value);
             allowed[_from][msg.sender] = allowed[_from][msg.sender].sub(_value);
@@ -54,8 +50,7 @@ contract StandardToken is ERC20 {
     }
 
     function approve(address _spender, uint _value) public returns (bool) {
-        // ensure we do not increase allowance for one-self
-        require(msg.sender != _spender);
+        require(_spender != address(0));
         // needs to be called twice -> first set to 0, then increase to another amount
         // this is to avoid race conditions
         require((_value == 0) || (allowed[msg.sender][_spender] == 0));
@@ -66,8 +61,8 @@ contract StandardToken is ERC20 {
     }
 
     function increaseApproval(address _spender, uint _addedValue) public returns (bool) {
-        // ensure we do not increase allowance for one-self
-        require(msg.sender != _spender);
+        // useless operation
+        require(_spender != address(0));
 
         // perform operation
         allowed[msg.sender][_spender] = allowed[msg.sender][_spender].add(_addedValue);
@@ -76,8 +71,8 @@ contract StandardToken is ERC20 {
     }
 
     function decreaseApproval(address _spender, uint _subtractedValue) public returns (bool) {
-        // ensure we do not operate on allowance for one-self
-        require(msg.sender != _spender);
+        // useless operation
+        require(_spender != address(0));
 
         uint oldValue = allowed[msg.sender][_spender];
         if (_subtractedValue > oldValue) {
