@@ -185,14 +185,14 @@ contract TokenAllocation is GenericCrowdsale {
         // add tokens to the beneficiary
         mintAndUpdate(_beneficiary, _tokens);
 
-        // if bonus exists
-        if (_bonus > 0) {
-          BonusIssued(_beneficiary, _bonus);
-        }
-
         // if tokens arent equal to bonus
         if (_tokens > _bonus) {
           TokensAllocated(_beneficiary, _contribution, _tokens.sub(_bonus));
+        }
+
+        // if bonus exists
+        if (_bonus > 0) {
+          BonusIssued(_beneficiary, _bonus);
         }
     }
 
