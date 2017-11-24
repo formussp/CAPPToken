@@ -1,4 +1,3 @@
-
 const web3 = global.web3;
 
 const ERC20 = artifacts.require("./ERC20.sol");
@@ -13,6 +12,7 @@ var thirdSum = 5 * 1e6 * 1e2;
 
 contract("allocation", function(accounts) {
     const [icoManager, icoBackend, foundersWallet, partnersWallet] = accounts;
+    const emergencyManager = accounts[9];
 
     //var token = TokenAllocation.deployed();
     //var issues = token.TokensAllocated({fromBlock: "latest"});
@@ -20,7 +20,7 @@ contract("allocation", function(accounts) {
 
     // TEST 1
     it("allocator can be created", () =>
-        TokenAllocation.new(icoManager, icoBackend, foundersWallet, partnersWallet, {gas: 6500000}).then(res => {
+        TokenAllocation.new(icoManager, icoBackend, foundersWallet, partnersWallet, emergencyManager, { gas: 6500000 }).then(res => {
             assert.isOk(res && res.address, "should have valid address");
             allocation = res;
         })
@@ -452,7 +452,7 @@ contract("allocation", function(accounts) {
                     totalSupply * 1805 / 10000,
                     "wrong number of tokens for founders");
 
-        let vestingWallet = await(allocation.vestingWallet());
+        let vestingWallet = await allocation.vestingWallet();
         let vestingBalance = await token.balanceOf(vestingWallet);
 
         assert.equal(Number(vestingBalance),
