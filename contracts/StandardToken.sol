@@ -49,7 +49,7 @@ contract StandardToken is ERC20 {
         return allowed[_owner][_spender];
     }
 
-    function approve(address _spender, uint _value) public returns (bool) {
+    function approve(address _spender, uint _value) public returns (bool success) {
         require(_spender != address(0));
         // needs to be called twice -> first set to 0, then increase to another amount
         // this is to avoid race conditions
@@ -60,7 +60,7 @@ contract StandardToken is ERC20 {
         return true;
     }
 
-    function increaseApproval(address _spender, uint _addedValue) public returns (bool) {
+    function increaseApproval(address _spender, uint _addedValue) public returns (bool success) {
         // useless operation
         require(_spender != address(0));
 
@@ -70,7 +70,7 @@ contract StandardToken is ERC20 {
         return true;
     }
 
-    function decreaseApproval(address _spender, uint _subtractedValue) public returns (bool) {
+    function decreaseApproval(address _spender, uint _subtractedValue) public returns (bool success) {
         // useless operation
         require(_spender != address(0));
 
