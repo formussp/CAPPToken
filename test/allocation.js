@@ -11,20 +11,15 @@ var secondSum = 13 * 1e6 * 1e2;
 var thirdSum = 5 * 1e6 * 1e2;
 
 contract("allocation", function(accounts) {
-    const [icoManager, icoBackend, foundersWallet, partnersWallet] = accounts;
-    const emergencyManager = accounts[9];
-
-    //var token = TokenAllocation.deployed();
-    //var issues = token.TokensAllocated({fromBlock: "latest"});
-    //var bonuses = token.BonusIssued({fromBlock: "latest"});
+  const [icoManager, icoBackend, foundersWallet, partnersWallet, emergencyManager] = accounts;
 
     // TEST 1
-    it("allocator can be created", () =>
-        TokenAllocation.new(icoManager, icoBackend, foundersWallet, partnersWallet, emergencyManager, { gas: 6500000 }).then(res => {
-            assert.isOk(res && res.address, "should have valid address");
-            allocation = res;
-        })
-      );
+    it("allocator can be created", () => (
+      TokenAllocation.deployed().then(instance => {
+        assert.isOk(instance && instance.address, "should have valid address");
+        allocation = instance;
+      })
+    ));
 
     // TEST 2
     it("bonus phase is Phase One", async function() {

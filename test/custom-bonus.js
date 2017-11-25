@@ -9,12 +9,12 @@ const Cappasity = artifacts.require('./Cappasity.sol');
 
 const UNINITIALIZED_ADDRESS = '0x0000000000000000000000000000000000000000';
 
-contract('TokenAllocation', (_accounts) => {
-  const accounts = _accounts.slice(0, 4);
-  const anonymous = _accounts[4];
-  const friend = _accounts[5];
-  const [icoManager, icoBackend, foundersWallet, partnersWallet] = _accounts;
-  const emergencyManager = _accounts[9];
+contract('TokenAllocation', (accounts) => {
+  const [icoManager, icoBackend, foundersWallet, partnersWallet, emergencyManager] = accounts;
+
+  // these are unused accounts
+  const anonymous = accounts[8];
+  const friend = accounts[9];
 
   const throwsOpcode = async (contract, args, called = { from: anonymous }) => {
     args.forEach(async ([method, ...data]) => {
@@ -28,12 +28,10 @@ contract('TokenAllocation', (_accounts) => {
   };
 
   before('init contract', () => (
-    TokenAllocation
-      .new(...accounts, emergencyManager, { gas: 6500000 }).then(async (res) => {
-        assert.isOk(res && res.address, 'should have valid address');
-        this.contract = res;
-        this.capp = Cappasity.at(await this.contract.tokenContract());
-      })
+    TokenAllocation.deployed().then(async (instance) => {
+      this.contract = instance;
+      this.capp = Cappasity.at(await instance.tokenContract());
+    })
   ));
 
   it('verify initial state', async () => {
@@ -100,7 +98,7 @@ contract('TokenAllocation', (_accounts) => {
     const args = [
       ['endMinting'],
       ['startMinting'],
-      ['unfreeze']
+      ['unfreeze'],
       ['freeze'],
       ['mint', anonymous, 100000],
     ];
