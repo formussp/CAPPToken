@@ -1,0 +1,25 @@
+{
+  "devDependencies": {
+    "@digix/web3-console": "^0.0.2",
+    "ganache-cli": "^6.0.3",
+    "ganache-core": "^2.0.2",
+    "lodash": "^4.17.4",
+    "truffle": "^4.0.1",
+    "truffle-hdwallet-provider": "^0.0.3",
+    "web3": "0.x.x"
+  },
+  "scripts": {
+    "develop": "truffle develop",
+    "compile": "truffle compile",
+    "rpc": "ganache-cli --host 127.0.0.1 -l 115000000 -d -i 1337",
+    "t:test": "truffle --network test",
+    "t:ropsten": "truffle --network ropsten",
+    "t:live": "truffle --network live",
+    "deploy": "yarn compile && yarn t:test deploy",
+    "deploy:ropsten": "yarn compile && yarn t:ropsten deploy",
+    "deploy:live": "NODE_ENV=production yarn compile --all && yarn t:live deploy"
+  },
+  "resolutions": {
+    "web3": "0.20.2"
+  }
+}

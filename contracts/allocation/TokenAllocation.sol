@@ -1,16 +1,17 @@
 pragma solidity ^0.4.18;
 
-import './Cappasity.sol';
 import './GenericCrowdsale.sol';
-import './SafeMath.sol';
-import './VestingWallet.sol';
+import '../capp/Cappasity.sol';
+import '../vesting/VestingWallet.sol';
+import "../../libraries/SafeMath.sol";
 
-   /**
-    * @dev Prepaid token allocation for a capped crowdsale with bonus structure sliding on sales
-    *      Written with OpenZeppelin sources as a rough reference.
-    */
+/**
+* @dev Prepaid token allocation for a capped crowdsale with bonus structure sliding on sales
+*      Written with OpenZeppelin sources as a rough reference.
+*/
+contract TokenAllocation is GenericCrowdsale {
+    using SafeMath for uint;
 
-contract TokenAllocation is GenericCrowdsale, SafeMath {
     // Events
     event TokensAllocated(address _beneficiary, uint _contribution, uint _tokensIssued);
     event BonusIssued(address _beneficiary, uint _bonusTokensIssued);
@@ -19,7 +20,7 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
 
     // Token information
     uint public tokenRate = 125; // 1 USD = 125 CAPP; so 1 cent = 1.25 CAPP \
-                                   // assuming CAPP has 2 decimals (as set in token contract)
+                                 // assuming CAPP has 2 decimals (as set in token contract)
     Cappasity public tokenContract;
 
     address public foundersWallet; // A wallet permitted to request tokens from the time vaults.
@@ -60,12 +61,14 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
     function TokenAllocation(address _icoManager,
                              address _icoBackend,
                              address _foundersWallet,
-                             address _partnersWallet
+                             address _partnersWallet,
+                             address _emergencyManager
                              ) public {
-        require(_icoManager != 0x0);
-        require(_icoBackend != 0x0);
-        require(_foundersWallet != 0x0);
-        require(_partnersWallet != 0x0);
+        require(_icoManager != address(0));
+        require(_icoBackend != address(0));
+        require(_foundersWallet != address(0));
+        require(_partnersWallet != address(0));
+        require(_emergencyManager != address(0));
 
         tokenContract = new Cappasity(address(this));
 
@@ -73,6 +76,7 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
         icoBackend       = _icoBackend;
         foundersWallet   = _foundersWallet;
         partnersWallet   = _partnersWallet;
+        emergencyManager = _emergencyManager;
     }
 
     // PRIVILEGED FUNCTIONS
@@ -83,11 +87,12 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
      * @param _beneficiary Receiver of the tokens.
      * @param _contribution Size of the contribution (in USD cents).
      */
-    function issueTokens(address _beneficiary, uint _contribution) external onlyOffChain onlyValidPhase onlyUnpaused {
-        require(safeAdd(totalCentsGathered, _contribution) <= hardCap);
-
+    function issueTokens(address _beneficiary, uint _contribution) external onlyBackend onlyValidPhase onlyUnpaused {
+        // phase 1 cap less than hard cap
         if (crowdsalePhase == CrowdsalePhase.PhaseOne) {
-            require(safeAdd(totalCentsGathered, _contribution) <= phaseOneCap);
+            require(totalCentsGathered.add(_contribution) <= phaseOneCap);
+        } else {
+            require(totalCentsGathered.add(_contribution) <= hardCap);
         }
 
         uint remainingContribution = _contribution;
@@ -100,7 +105,7 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
             uint contributionPart = min(remainingContribution, centsLeftInPhase);
 
             // 3 - mint tokens
-            uint tokensToMint = safeMul(tokenRate, contributionPart);
+            uint tokensToMint = tokenRate.mul(contributionPart);
             mintAndUpdate(_beneficiary, tokensToMint);
             TokensAllocated(_beneficiary, contributionPart, tokensToMint);
 
@@ -117,8 +122,8 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
             }
 
             // 6 - log the processed part of the contribution
-            totalCentsGathered = safeAdd(totalCentsGathered, contributionPart);
-            remainingContribution = safeSub(remainingContribution, contributionPart);
+            totalCentsGathered = totalCentsGathered.add(contributionPart);
+            remainingContribution = remainingContribution.sub(contributionPart);
 
             // 7 - continue?
         } while (remainingContribution > 0);
@@ -142,18 +147,19 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
      * @param _bonus Bonus size
      */
     function issueTokensWithCustomBonus(address _beneficiary, uint _contribution, uint _tokens, uint _bonus)
-                                            onlyOffChain onlyValidPhase onlyUnpaused external {
+                                            external onlyBackend onlyValidPhase onlyUnpaused {
 
-        // ensure we are not over hard cap after this contribution
-        require(safeAdd(totalCentsGathered, _contribution) <= hardCap);
         // sanity check, ensure we allocate more than 0
         require(_tokens > 0);
         // all tokens can be bonuses, but they cant be less than bonuses
         require(_tokens >= _bonus);
-
-        // ensure we are not over phase 1 cap after this contribution
+        // check capps
         if (crowdsalePhase == CrowdsalePhase.PhaseOne) {
-            require(safeAdd(totalCentsGathered, _contribution) <= phaseOneCap);
+            // ensure we are not over phase 1 cap after this contribution
+            require(totalCentsGathered.add(_contribution) <= phaseOneCap);
+        } else {
+            // ensure we are not over hard cap after this contribution
+            require(totalCentsGathered.add(_contribution) <= hardCap);
         }
 
         uint remainingContribution = _contribution;
@@ -166,8 +172,8 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
           uint contributionPart = min(remainingContribution, centsLeftInPhase);
 
           // 3 - log the processed part of the contribution
-          totalCentsGathered = safeAdd(totalCentsGathered, contributionPart);
-          remainingContribution = safeSub(remainingContribution, contributionPart);
+          totalCentsGathered = totalCentsGathered.add(contributionPart);
+          remainingContribution = remainingContribution.sub(contributionPart);
 
           // 4 - advance bonus phase
           if ((remainingContribution == centsLeftInPhase) && (bonusPhase != BonusPhase.None)) {
@@ -179,20 +185,21 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
         // add tokens to the beneficiary
         mintAndUpdate(_beneficiary, _tokens);
 
-        // dispatch token issue event
-        TokensAllocated(_beneficiary, _contribution, _tokens);
+        // if tokens arent equal to bonus
+        if (_tokens > _bonus) {
+          TokensAllocated(_beneficiary, _contribution, _tokens.sub(_bonus));
+        }
 
-        // dispatch bonus issued event
-        uint normalizedBonus = safeSub(_tokens, _bonus);
-        if (normalizedBonus > 0) {
-          BonusIssued(_beneficiary, normalizedBonus);
+        // if bonus exists
+        if (_bonus > 0) {
+          BonusIssued(_beneficiary, _bonus);
         }
     }
 
     /**
      * @dev Issue tokens for founders and partners, end the current phase.
      */
-    function rewardFoundersAndPartners() external onlyOffChain onlyValidPhase onlyUnpaused {
+    function rewardFoundersAndPartners() external onlyBackend onlyValidPhase onlyUnpaused {
         uint tokensDuringThisPhase;
         if (crowdsalePhase == CrowdsalePhase.PhaseOne) {
             tokensDuringThisPhase = totalTokenSupply;
@@ -202,8 +209,8 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
 
         // Total tokens sold is 70% of the overall supply, founders' share is 18%, early contributors' is 12%
         // So to obtain those from tokens sold, multiply them by 0.18 / 0.7 and 0.12 / 0.7 respectively.
-        uint tokensForFounders = safeDiv(safeMul(tokensDuringThisPhase, 257), 1000); // 0.257 of 0.7 is 0.18 of 1
-        uint tokensForPartners = safeDiv(safeMul(tokensDuringThisPhase, 171), 1000); // 0.171 of 0.7 is 0.12 of 1
+        uint tokensForFounders = tokensDuringThisPhase.mul(257).div(1000); // 0.257 of 0.7 is 0.18 of 1
+        uint tokensForPartners = tokensDuringThisPhase.mul(171).div(1000); // 0.171 of 0.7 is 0.12 of 1
 
         tokenContract.mint(partnersWallet, tokensForPartners);
 
@@ -216,18 +223,20 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
             // Store the total sum collected during phase one for calculations in phase two.
             centsInPhaseOne = totalCentsGathered;
             tokensDuringPhaseOne = totalTokenSupply;
+
             // Enable token transfer.
             tokenContract.unfreeze();
             crowdsalePhase = CrowdsalePhase.BetweenPhases;
         } else {
             tokenContract.mint(address(vestingWallet), tokensForFounders);
             vestingWallet.launchVesting();
+
             FoundersAndPartnersTokensIssued(address(vestingWallet), tokensForFounders,
                                             partnersWallet,         tokensForPartners);
-          crowdsalePhase = CrowdsalePhase.Finished;
+            crowdsalePhase = CrowdsalePhase.Finished;
         }
 
-      tokenContract.endMinting();
+        tokenContract.endMinting();
    }
 
     /**
@@ -236,7 +245,7 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
      * _tokenRate How many CAPP per 1 USD cent. As dollars, CAPP has two decimals.
      *            For instance: tokenRate = 125 means "1.25 CAPP per USD cent" <=> "125 CAPP per USD".
      */
-    function beginPhaseTwo(uint _tokenRate) external onlyManager {
+    function beginPhaseTwo(uint _tokenRate) external onlyManager onlyUnpaused {
         require(crowdsalePhase == CrowdsalePhase.BetweenPhases);
         require(_tokenRate != 0);
 
@@ -246,19 +255,34 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
         tokenContract.startMinting();
     }
 
+    /**
+     * @dev Allows to freeze all token transfers in the future
+     * This is done to allow migrating to new contract in the future
+     * If such need ever arises (ie Migration to ERC23, or anything that community decides worth doing)
+     */
+    function freeze() external onlyUnpaused onlyEmergency {
+        require(crowdsalePhase != CrowdsalePhase.PhaseOne);
+        tokenContract.freeze();
+    }
+
+    function unfreeze() external onlyUnpaused onlyEmergency {
+        require(crowdsalePhase != CrowdsalePhase.PhaseOne);
+        tokenContract.unfreeze();
+    }
+
     // INTERNAL FUNCTIONS
     // ====================
     function calculateCentsLeftInPhase(uint _remainingContribution) internal view returns(uint) {
         // Ten percent bonuses happen in both Phase One and Phase two, therefore:
         // Take the bonus tier size, subtract the total money gathered in the current phase
         if (bonusPhase == BonusPhase.TenPercent) {
-            return safeSub(bonusTierSize, safeSub(totalCentsGathered, centsInPhaseOne));
+            return bonusTierSize.sub(totalCentsGathered.sub(centsInPhaseOne));
         }
 
         if (bonusPhase == BonusPhase.FivePercent) {
           // Five percent bonuses only happen in Phase One, so no need to account
           // for the first phase separately.
-          return safeSub(safeMul(bonusTierSize, 2), totalCentsGathered);
+          return bonusTierSize.mul(2).sub(totalCentsGathered);
         }
 
         return _remainingContribution;
@@ -266,7 +290,7 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
 
     function mintAndUpdate(address _beneficiary, uint _tokensToMint) internal {
         tokenContract.mint(_beneficiary, _tokensToMint);
-        totalTokenSupply = safeAdd(totalTokenSupply, _tokensToMint);
+        totalTokenSupply = totalTokenSupply.add(_tokensToMint);
     }
 
     function calculateTierBonus(uint _contribution) constant internal returns (uint) {
@@ -277,29 +301,27 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
         // tierBonus tier tierBonuses. We make sure in issueTokens that the processed contribution \
         // falls entirely into one tier
         if (bonusPhase == BonusPhase.TenPercent) {
-            tierBonus = safeDiv(_contribution, 10);
+            tierBonus = _contribution.div(10); // multiply by 0.1
         } else if (bonusPhase == BonusPhase.FivePercent) {
-            tierBonus = safeDiv(safeMul(_contribution, 5), 100);
+            tierBonus = _contribution.div(20); // multiply by 0.05
         }
 
-        tierBonus = safeMul(tierBonus, tokenRate);
+        tierBonus = tierBonus.mul(tokenRate);
         return tierBonus;
     }
 
     function calculateSizeBonus(uint _contribution) constant internal returns (uint) {
         uint sizeBonus = 0;
         if (crowdsalePhase == CrowdsalePhase.PhaseOne) {
-            // 5% for contributions above bigContributionBound
-            if (_contribution >= bigContributionBound)  {
-                sizeBonus = safeDiv(safeMul(_contribution, 5), 100);
-            }
-
-            // additional 5% for contributions above hugeContributionBound, 10% total
+            // 10% for huge contribution
             if (_contribution >= hugeContributionBound) {
-                sizeBonus = safeMul(sizeBonus, 2);
+                sizeBonus = _contribution.div(10); // multiply by 0.1
+            // 5% for big one
+            } else if (_contribution >= bigContributionBound) {
+                sizeBonus = _contribution.div(20); // multiply by 0.05
             }
 
-            sizeBonus = safeMul(sizeBonus, tokenRate);
+            sizeBonus = sizeBonus.mul(tokenRate);
         }
         return sizeBonus;
     }
@@ -321,23 +343,15 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
     }
 
     function min(uint _a, uint _b) internal pure returns (uint result) {
-        if (_a < _b) return _a;
-        else return _b;
+        return _a < _b ? _a : _b;
     }
 
+    /**
+     * Modifiers
+     */
     modifier onlyValidPhase() {
         require( crowdsalePhase == CrowdsalePhase.PhaseOne
                  || crowdsalePhase == CrowdsalePhase.PhaseTwo );
-        _;
-    }
-
-    modifier onlyManager() {
-        require(msg.sender == icoManager);
-        _;
-    }
-
-    modifier onlyOffChain() {
-        require(msg.sender == icoBackend);
         _;
     }
 
