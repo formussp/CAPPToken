@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1024px" height="1024px" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 47 (45396) - http://www.bohemiancoding.com/sketch -->
+    <title>1024-1024</title>
+    <desc>Created with Sketch.</desc>
+    <defs>
+        <linearGradient x1="65.6036377%" y1="0%" x2="18.057251%" y2="116.384888%" id="linearGradient-1">
+            <stop stop-color="#DA1E7C" offset="0%"></stop>
+            <stop stop-color="#EE4D9E" offset="100%"></stop>
+        </linearGradient>
+        <path d="M744.659133,305.745735 C692.390344,255.298327 619.55769,224 539,224 C379.941992,224 251,346.016397 251,496.53125 C251,647.046103 379.941992,769.0625 539,769.0625 C635.433947,769.0625 720.797927,724.212029 773.068035,655.352069 L689.312664,606.25882 C654.136937,646.852909 599.877162,672.875 539,672.875 C432.961328,672.875 347,593.923214 347,496.53125 C347,399.139286 432.961328,320.1875 539,320.1875 C589.939321,320.1875 636.24541,338.407136 670.614508,368.138219 L744.659133,305.745735 Z" id="path-2"></path>
+        <filter x="-13.2%" y="-5.5%" width="118.4%" height="117.6%" filterUnits="objectBoundingBox" id="filter-3">
+            <feOffset dx="-21" dy="18" in="SourceAlpha" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="12.5" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feColorMatrix values="0 0 0 0 0.64623193   0 0 0 0 0.0763295172   0 0 0 0 0.361280724  0 0 0 1 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+    </defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Done-icons" transform="translate(-272.000000, -46.000000)">
+            <g id="1024-1024" transform="translate(272.000000, 46.000000)">
+                <circle id="Oval" fill="url(#linearGradient-1)" cx="512" cy="512" r="512"></circle>
+                <g id="Combined-Shape" transform="translate(512.034018, 496.531250) rotate(12.000000) translate(-512.034018, -496.531250) ">
+                    <use fill="black" fill-opacity="1" filter="url(#filter-3)" xlink:href="#path-2"></use>
+                    <use fill="#FFFFFF" fill-rule="evenodd" xlink:href="#path-2"></use>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>
